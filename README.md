@@ -23,6 +23,7 @@ breaking the rest.
 
 ## Architecture
 
+```
 Android 14
 │
 ├── System services (Bluetooth, GPS, Audio, MCU)
@@ -41,6 +42,7 @@ Android 14
                 ├── Radio
                 ├── Settings
                 └── SDK
+```
 
 The **Helm SDK** is the most important piece. It abstracts all hardware-specific
 communication so the launcher never talks directly to OEM services — it only
@@ -56,137 +58,84 @@ CarSystem.openBluetooth()
 CarSystem.openCarPlay()
 CarSystem.openReverseCamera()
 CarSystem.openNavigation()
+```
 
 Each method internally handles OEM-specific Intents, services, or MCU communication,
 keeping the rest of the codebase clean and hardware-agnostic.
 
 ---
-Features
 
-Launcher
+## Features
 
+### Launcher
 - Fully custom home screen
 - Replaces OEM launcher as the default home app
 - Fast, low-latency UI built for in-vehicle use
 
-Widget Engine
-
+### Widget Engine
 - Independent, composable widget blocks
 - Live data: clock, speed, media, weather
 - Configurable grid layout
 
-Theme System
-
+### Theme System
 - External theme format (no recompilation needed)
 - Controls: colors, typography, backgrounds, icons, animations
 - Install themes at runtime
 
-Modular Architecture
-
+### Modular Architecture
 - Each feature is an independent module
 - Update one module without affecting others
 - Clean boundaries between UI and system integration
 
 ---
-Target Hardware
+
+## Target Hardware
 
 Helm is being developed on and for the following hardware:
 
-┌───────────┬────────────────┐
-│ Component │    Details     │
-├───────────┼────────────────┤
-│ SoC       │ AllWinner A133 │
-├───────────┼────────────────┤
-│ Android   │ 14             │
-├───────────┼────────────────┤
-│ RAM       │ 4 GB           │
-├───────────┼────────────────┤
-│ Storage   │ 64 GB          │
-├───────────┼────────────────┤
-│ Bluetooth │ 5.4            │
-├───────────┼────────────────┤
-│ Audio IC  │ PT2313         │
-├───────────┼────────────────┤
-│ Radio IC  │ QN8035         │
-├───────────┼────────────────┤
-│ MCU       │ T13.1.1        │
-└───────────┴────────────────┘
+| Component | Details |
+|-----------|---------|
+| SoC | AllWinner A133 |
+| Android | 14 |
+| RAM | 4 GB |
+| Storage | 64 GB |
+| Bluetooth | 5.4 |
+| Audio IC | PT2313 |
+| Radio IC | QN8035 |
+| MCU | T13.1.1 |
 
 The SDK layer is designed to be portable. Future targets may include UIS7862,
 Snapdragon-based units, and other Android automotive SoCs.
 
 ---
-Roadmap
 
-┌─────────┬───────────────────────────────────────────────┐
-│ Version │                     Scope                     │
-├─────────┼───────────────────────────────────────────────┤
-│ v1      │ Launcher, widget engine, music                │
-├─────────┼───────────────────────────────────────────────┤
-│ v2      │ Weather, OBD integration, theme system        │
-├─────────┼───────────────────────────────────────────────┤
-│ v3      │ Voice assistant, automations, gestures        │
-├─────────┼───────────────────────────────────────────────┤
-│ v4      │ Plugin store, public SDK, third-party widgets │
-└─────────┴───────────────────────────────────────────────┘
+## Roadmap
+
+| Version | Scope |
+|---------|-------|
+| v1 | Launcher, widget engine, music |
+| v2 | Weather, OBD integration, theme system |
+| v3 | Voice assistant, automations, gestures |
+| v4 | Plugin store, public SDK, third-party widgets |
 
 ---
-Project Phases
 
-Phase 1 — Reverse Engineering & Documentation
+## Project Phases
 
+### Phase 1 — Reverse Engineering & Documentation
 Understand the platform completely before writing production code:
 - Map all system apps, services, and activities
 - Document available Intents and permissions
 - Understand MCU communication protocol
 - Identify CarPlay and reverse camera entry points
 
-Phase 2 — Infrastructure
-
+### Phase 2 — Infrastructure
 Build the foundation:
 - Helm SDK with OEM abstraction
 - Launcher skeleton with modular architecture
 - CI/CD pipeline
 
-Phase 3 — User Experience
-
-Snapdragon-based units, and other Android automotive SoCs.
-
----
-Roadmap
-
-┌─────────┬───────────────────────────────────────────────┐
-│ Version │                     Scope                     │
-├─────────┼───────────────────────────────────────────────┤
-│ v1      │ Launcher, widget engine, music                │
-├─────────┼───────────────────────────────────────────────┤
-│ v2      │ Weather, OBD integration, theme system        │
-├─────────┼───────────────────────────────────────────────┤
-│ v3      │ Voice assistant, automations, gestures        │
-├─────────┼───────────────────────────────────────────────┤
-│ v4      │ Plugin store, public SDK, third-party widgets │
-└─────────┴───────────────────────────────────────────────┘
-
----
-Project Phases
-
-Phase 1 — Reverse Engineering & Documentation
-
-Understand the platform completely before writing production code:
-- Map all system apps, services, and activities
-- Document available Intents and permissions
-- Understand MCU communication protocol
-- Identify CarPlay and reverse camera entry points
-
-Phase 2 — Infrastructure
-
-Build the foundation:
-- Helm SDK with OEM abstraction
-- Launcher skeleton with modular architecture
-- CI/CD pipeline
-
-Phase 3 — User Experience
-
+### Phase 3 — User Experience
 Build the interface:
 - Modern, automotive-grade UI
 - Widget system
@@ -194,20 +143,23 @@ Build the interface:
 - Animations and transitions
 
 ---
-Philosophy
 
-▎ Instead of asking "how do we modify what the manufacturer gave us?"
-▎ we ask "how do we make the manufacturer irrelevant?"
+## Philosophy
 
----
-License
-
-MIT — see LICENSE.
+> Instead of asking "how do we modify what the manufacturer gave us?"
+> we ask "how do we make the manufacturer irrelevant?"
 
 ---
-Español
 
-Helm es una plataforma de software de código abierto para pantallas Android de
+## License
+
+MIT — see [LICENSE](LICENSE).
+
+---
+
+## Español
+
+**Helm** es una plataforma de software de código abierto para pantallas Android de
 automóvil. El objetivo es reemplazar la experiencia del fabricante (OEM) por una
 interfaz moderna, rápida y completamente desarrollada por nosotros, sin depender de
 actualizaciones externas.

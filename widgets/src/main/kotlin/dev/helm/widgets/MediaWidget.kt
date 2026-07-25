@@ -48,7 +48,7 @@ fun MediaWidget(
         }
 
         if (speed > 0) {
-            Row(verticalAlignment = Alignment.Baseline) {
+            Row(verticalAlignment = Alignment.Bottom) {
                 Text(
                     text = speed.toString(),
                     style = MaterialTheme.typography.displayMedium,

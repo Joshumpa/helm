@@ -27,6 +27,12 @@ object CarSystem {
 
     fun openDvr(context: Context) = launch(context, "com.tw.dvr")
 
+    fun openEq(context: Context) = launch(context, "com.tw.eq")
+
+    fun openAux(context: Context) = launch(context, "com.tw.auxin")
+
+    fun openCarSettings(context: Context) = launch(context, "com.dofun.carsetting")
+
     // URI scheme confirmed from manifest — autoVerify=true on EnterSettingActivity
     fun openSettings(context: Context) {
         context.startActivity(

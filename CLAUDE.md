@@ -18,10 +18,10 @@ communication so the launcher never depends on Dofun internals directly.
 
 ## Current Status
 
-**Phase 1 — Reverse Engineering & Documentation. No production code exists yet.**
+**Phase 1 — Complete. Phase 2 — In progress.**
 
-Do not write production code until Phase 1 is complete. Building on assumptions about
-OEM behavior will cause failures that are hard to debug on-device.
+Phase 1 RE is done. The Gradle multi-module scaffold exists. Development can proceed
+on all UI/launch features. MCU data integration requires root (system app install).
 
 ### Phase 1 — Reverse Engineering & Documentation
 Understand the platform completely before writing any production code:
@@ -37,11 +37,11 @@ Understand the platform completely before writing any production code:
 - Permission list Dofun holds that Helm will need
 - Answer to each open question listed at the bottom of this file
 
-### Phase 2 — Infrastructure
+### Phase 2 — Infrastructure (in progress)
 Build the foundation:
-- Helm SDK with OEM abstraction layer
-- Launcher skeleton with multi-module Gradle structure
-- CI/CD pipeline
+- ✅ Helm SDK with OEM abstraction layer (`sdk/` module — CarSystem, AdasEvent, McuDataSource interface)
+- ✅ Launcher skeleton with multi-module Gradle structure (11 modules, minSdk 29, armeabi-v7a)
+- ⬜ CI/CD pipeline
 
 ### Phase 3 — User Experience
 Build the interface:
@@ -91,11 +91,14 @@ $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 | Field | Value |
 |-------|-------|
 | SoC | AllWinner A133 |
-| Android | 14 |
+| Android | 10 (API 29) — Dofun UI reporta "14" incorrectamente |
+| CPU mode | 32-bit (armeabi-v7a) — A133 es 64-bit físico pero firmware es 32-bit |
 | RAM | 4 GB |
 | Storage | 64 GB |
 | Kernel | 4.9.170 |
 | Build | QP1A.191105.004 test-keys |
+| SELinux | permissive — no bloquea operaciones no autorizadas |
+| Security patch | 2021-01-05 |
 | Audio IC | PT2313 |
 | Radio IC | QN8035 |
 | Bluetooth | 5.4 |
@@ -160,6 +163,13 @@ Local analysis artifacts in `dofun-analysis/`:
 - `kp-src/` — kp.jar decompiled via jadx (RePlugin framework only, no business logic)
 - `dofun-src/` — main APK decompiled via jadx (Jiagu stub only, no business logic)
 - `jadx/` — jadx 1.5.1 binary
+- `apks/` — APKs pulled from device via TermOne Plus `cp /system_tw/priv-app/... /sdcard/`
+  - `com.tw.uart.apk` — MCU UART service (713 KB)
+  - `CarMate.apk` — MCU bridge app layer (7.3 MB)
+  - `com.tw.reverse_3f4d.apk` — reverse camera app (10.4 MB)
+- `uart-src/` — com.tw.uart decompiled — **fully readable, critical IPC findings**
+- `carmate-src/` — CarMate decompiled — partial (18 errors), business logic readable
+- `reverse-src/` — com.tw.reverse decompiled — partial, manifest + activities readable
 
 ---
 
@@ -167,30 +177,38 @@ Local analysis artifacts in `dofun-analysis/`:
 
 ### System Package Map
 
-Packages identified from static APK analysis. Confirm presence with
-`adb shell pm list packages` on the actual unit.
+Packages confirmed on-device via `pm list packages -f` from TermOne Plus (no root).
+All OEM packages live in the `/system_tw/` partition, separate from `/system/`.
 
-| Function | Package(s) |
+| Function | Package (confirmed) |
 |---|---|
-| Radio | `com.tw.radio`, `android.car.app.radio`, `com.syu.radio` |
-| Bluetooth | `com.tw.bt`, `com.autochips.bluetooth`, `com.aotochips.bluetooth` |
-| Music (local) | `com.tw.music`, `android.car.app.media`, `com.syu.music` |
-| Video | `com.tw.video`, `android.car.app.mp4`, `com.syu.video` |
-| Navigation | `android.car.app.gps`, `com.syu.onekeynavi` |
-| CarPlay / Mirror | `com.tima.carnet.vt` (Tima), `com.zjinnova.zlink` (ZLINK), `net.easyconn` (Yilian) |
-| MCU bridge | `com.dofun.carassistant.car` (CarMate) |
-| Car settings | `com.dofun.carsetting.ui.MainActivity` |
-| AUX / ext. input | `com.tw.auxin.AuxInActivity`, `com.autochips.android.backcar` |
-| 360 camera | `cn.cardoor.zt360`, `com.autochips.android.backcar` |
-| Dashcam / DVR | `com.dofun.recorder`, `com.tw.recorder`, `com.softwinner.dvr` |
-| Voice assistant | `com.dofun.aios.voice`, `com.dofun.overseasvoice`, `com.dofun.bridge` |
-| EQ / DSP | `com.tw.eq.EQActivity`, `com.tw.eq.DSPActivity` |
-| Steering wheel | `com.tw.keypad`, `com.android.settings.KeypadActivity` |
-| Tire pressure | `com.dofun.tpms` |
+| MCU UART (low-level) | `com.tw.uart` ← **primary MCU channel** |
+| MCU bridge (app layer) | `com.dofun.carassistant.car` (CarMate) |
+| Radio | `com.tw.radio` |
+| Bluetooth | `com.tw.bt` |
+| Music (local) | `com.tw.music` |
+| Video | `com.tw.video` |
+| EQ / DSP | `com.tw.eq` |
+| AUX input | `com.tw.auxin` |
+| Reverse camera | `com.tw.reverse` |
+| Right/lateral camera | `com.tw.rightview` |
+| 360 camera | `cn.cardoor.zt360` |
+| Dashcam / DVR | `com.tw.dvr` |
+| CarPlay / Mirror | `com.zjinnova.zlink` (ZLINK — only one confirmed installed) |
+| Steering wheel | `com.tw.keypad` |
+| Car settings | `com.dofun.carsetting` |
 | Weather | `com.dofun.dofunweather.main` |
-| APK installer | `com.dofun.carsetting.activity.apkinstall.InstallActivity` |
-| Air conditioning | `com.tw.ac.AirConditionActivity` |
-| Boot animation | `com.tw.bootanimation.BootAnimationActivity` |
+| Launcher | `com.dofun.variety` |
+| Dofun market | `com.dofun.market` |
+| Boot animation | `com.tw.bootanimation` |
+| Core service | `com.tw.coreservice` |
+| Core base | `com.tw.core` |
+| Extended service | `com.tw.service.xt` |
+| Main service | `com.tw.service` |
+| Network | `com.tw.net` |
+| File explorer | `com.tw.twfileexplore` |
+| Car model selector | `com.tw.carchoose` |
+| Unknown hardware | `com.ms.ms2160` (MS912X.apk) — function TBD |
 
 ### AndroidManifest Analysis (static, from downloaded APK v168)
 
@@ -260,11 +278,35 @@ Query from ADB:
 adb shell content query --uri content://com.dofun.variety.ExportedProvider
 ```
 
-### MCU → Android Data Channel (confirmed)
+### MCU → Android Data Channel (fully documented)
 
 The launcher theme plugin (`kp.jar`) receives live vehicle data from the MCU.
-The delivery mechanism (broadcast, service, or provider) is confirmed to exist but
-the source APK is not `com.dofun.variety` — it is a separate system app.
+The source APK is **`com.tw.uart`** — confirmed present in `/system_tw/priv-app/`.
+It handles raw UART/serial communication with the MCU using the `android-serialport-api`
+library (JNI, native `libserial_port.so`). Data flows upward to
+`com.dofun.carassistant.car` (CarMate) via AIDL callback.
+
+**IPC mechanism: AIDL Binder** — confirmed via jadx decompilation of `com.tw.uart.apk`.
+
+AIDL interface name: `com.tw.uart.IUartController`
+Bind action: `com.tw.uart.UartService.Bind`
+
+| Transaction | Method | Purpose |
+|-------------|--------|---------|
+| 1 | `registerCallback(IUartCallback cb)` | Subscribe to raw MCU bytes |
+| 2 | `unregisterCallback(IUartCallback cb)` | Unsubscribe |
+| 3 | `openUart(int baudRate, String devPath)` | Open serial port (e.g. `/dev/ttyS?`) |
+| 4 | `closeUart()` | Close serial port |
+| 5 | `writeUartData(byte[] data)` | Send raw command bytes to MCU |
+| 6 | `updateDataTime(Bundle b)` | Set polling interval (default 50 ms, min 10 ms) |
+
+Callback delivers: `void onUartData(byte[] rawBytes)` — raw bytes, format unknown (needs logcat).
+
+**Critical constraint: `android:sharedUserId="android.uid.system"`**
+`com.tw.uart` and `com.tw.reverse` both run as the Android system user.
+Only apps with the same UID can bind to `UartService`. Helm must be installed as a
+system app (requires root) to receive MCU data directly. This is the architectural
+reason CarMate exists as the bridge — it is also a system app.
 
 **Speed:** delivered continuously, thresholds at 5, 10, 20, 30, 50, 70, 90 km/h.
 Displayed as large numeric text (`tv_carspeed_text`, 60sp) + unit (`tv_carspeed_unit`, 22sp).
@@ -295,6 +337,31 @@ the firmware (`/system/priv-app/Settings/Settings.apk`), which requires ADB to p
 This is a circular dependency — ADB is needed to read the password, but the password
 is needed to enable wireless ADB.
 
+### Reverse Camera — Entry Points (confirmed via jadx)
+
+APK: `com.tw.reverse` — also `android:sharedUserId="android.uid.system"`.
+
+| Entry point | How to reach | Notes |
+|-------------|-------------|-------|
+| `com.tw.reverse.StreamMediaActivity` | `getLaunchIntentForPackage("com.tw.reverse")` | Main app, LAUNCHER category |
+| `cn.cardoor.desktop.window.floating.intent.action.LAUNCH` | `am start -a` or `sendBroadcast` | Floating window — may work from non-system app |
+| `com.tw.reverse.ReverseActivity` | Not externally accessible | No action in IntentFilter |
+| `com.tw.reverse.RadarService` | Exported service | Parking radar display |
+
+The same floating window action pattern (`cn.cardoor.desktop.window.*`) appears in
+the `com.tw.reverse` manifest, the `DesktopWindowService` in Dofun, and likely other
+OEM apps — it is the platform-level multi-window overlay mechanism.
+
+### CarMate Broadcasts (confirmed via jadx)
+
+CarMate (`com.dofun.carassistant.car`) emits these broadcasts:
+- `com.dofun.intent.action.TRACK_SWITCH` — media track change notification
+- `com.dofun.location.DESTROY_LOCATIONSERVICE` — location service lifecycle
+
+The MCU data distribution from CarMate to the launcher is likely via a second AIDL
+interface or via direct IPC — not found in the broadcast search. Needs logcat or
+further decompilation of the obfuscated CarMate classes (heavily renamed, a/b/c/...).
+
 ### ADB Access Attempts
 
 | Method | Result |
@@ -303,30 +370,38 @@ is needed to enable wireless ADB.
 | Bugjaeger (Android OTG) | Failed — same host-mode issue |
 | `adb connect 192.168.1.79:5555` | Refused (port closed) |
 | Ports 5037, 4444, 7777, 8888 | All timed out |
+| LADB (Play Store) | Paid app — skipped |
+| TermOne Plus (Play Store) | **Installed and working** — shell access without root |
+| `setprop service.adb.tcp.port 5555` | Ran without error, value confirmed via getprop |
+| `stop adbd` / `start adbd` | Failed — requires root |
+| `kill $(pidof adbd)` | Failed — adbd invisible to non-root ps |
+| `settings put global adb_wifi_enabled 1` | Failed — requires INTERACT_ACROSS_USERS |
 
 Unit IP confirmed: **192.168.1.79** (DHCP — may change on reboot; verify in
 Settings → Wi-Fi → tap connected network before each session)
 
-**Current unblocking plan:** Sideload a terminal emulator APK via USB drive, then
-run `setprop service.adb.tcp.port 5555 && stop adbd && start adbd` from the terminal.
-APK to use: **Terminal Emulator for Android** (`jackpal.androidterm`) — download from
-APKPure or APKMirror, copy to USB drive, install from the unit's file manager or
-APK installer (`com.dofun.carsetting.activity.apkinstall.InstallActivity`).
+**Current status:** Terminal shell available via TermOne Plus. ADB port cannot be
+activated without root. `su` binary not present. No root path available from userspace.
+
+**Next unblocking option:** FEL mode (AllWinner bootloader) — requires physical access
+to the PCB to locate the FEL pad/button. Allows flashing a Magisk-patched boot image
+from PC via PhoenixSuit without needing ADB.
 
 ### What is still unknown
-- Root via `adb root` or `adb shell su` (test-keys build makes this likely — try immediately after connecting)
-- Which system APK delivers MCU data (speed, ADAS) to the launcher
-- How the reverse camera signal is delivered to Android
-- How CarPlay is launched — which of the three mirror apps and via what Intent
-- What the `ExportedProvider` KV keys contain
-- What plugin APKs are loaded by RePlugin at runtime (need root to read `/data/data/com.dofun.variety/`)
+- Root access — no `su` binary, ADB not enabled. FEL mode is next option.
+- Raw MCU byte format — what bytes mean speed, ADAS events, etc. (needs logcat with root)
+- How CarMate distributes parsed MCU data to the launcher (second AIDL? broadcast?)
+- What the `ExportedProvider` KV keys contain (needs `adb shell content query`)
+- What plugin APKs RePlugin loads at runtime (needs root to read `/data/data/com.dofun.variety/`)
+- Function of `com.ms.ms2160` (MS912X.apk) — unknown hardware module
+- `com.tw.rightview` entry points — APK not yet decompiled
 
 ---
 
 ## Architecture
 
 ```
-Android 14
+Android 10 (API 29)
 │
 ├── System services (Bluetooth, GPS, Audio, MCU)
 │
@@ -358,7 +433,7 @@ in support for a new head unit means updating `:sdk` only.
 - UI: **Jetpack Compose**
 - Architecture: **MVVM + Clean Architecture per module**
 - Build: **Gradle (multi-module)**
-- Min SDK: Android 14 (API 34)
+- Min SDK: Android 10 (API 29) — confirmado por getprop y build number QP1A (Android Q)
 
 ---
 
@@ -401,11 +476,14 @@ for the current hardware target. The launcher calls only these — never raw Int
 
 ## Key Open Questions (Phase 1)
 
-1. ~~Is ADB accessible wirelessly?~~ **Partially answered** — unit IP is 192.168.1.79, port 5555 is closed. Need to enable via terminal sideload.
-2. Can we obtain root? Try `adb root` and `adb shell su` immediately after first ADB connection.
-3. What Intents does `com.dofun.variety` expose at runtime? (manifest analyzed statically — confirm with `dumpsys package com.dofun.variety` on device)
-4. How does the MCU bridge deliver data to the launcher? (broadcast, service, or provider?)
-5. How is the reverse camera signal delivered to Android?
-6. How does Dofun launch CarPlay — which of the three mirror apps does it use?
-7. What system permissions does Dofun hold that Helm will need?
-8. What does the `ExportedProvider` KV store contain? (`adb shell content query --uri content://com.dofun.variety.ExportedProvider`)
+1. ~~Is ADB accessible wirelessly?~~ **Answered** — port 5555 bloqueado. Terminal disponible vía TermOne Plus pero sin root no se puede activar ADB. Próximo paso: FEL mode.
+2. ~~Which system APK delivers MCU data?~~ **Answered** — `com.tw.uart` es el canal UART de bajo nivel. `com.dofun.carassistant.car` (CarMate) es la capa de aplicación.
+3. ~~How is the reverse camera signal delivered?~~ **Answered** — `com.tw.reverse.StreamMediaActivity` vía `getLaunchIntentForPackage`, o floating window action `cn.cardoor.desktop.window.floating.intent.action.LAUNCH`.
+4. ~~Which CarPlay app does Dofun use?~~ **Answered** — `com.zjinnova.zlink` (ZLINK) es el único confirmado instalado.
+5. **Can we obtain root?** — `su` no existe, ADB no disponible. FEL mode es el siguiente camino viable.
+6. ~~How does `com.tw.uart` deliver data?~~ **Answered** — AIDL Binder. Interface `com.tw.uart.IUartController`, bind action `com.tw.uart.UartService.Bind`. Ver tabla completa arriba.
+7. ~~What Intents does `com.tw.reverse` respond to?~~ **Answered** — ver tabla de entry points arriba. `com.tw.rightview` pendiente.
+8. **What does the `ExportedProvider` KV store contain?** — requiere ADB: `adb shell content query --uri content://com.dofun.variety.ExportedProvider`
+9. **What is `com.ms.ms2160` (MS912X.apk)?** — paquete desconocido en `/system_tw/`. Función sin identificar.
+10. **What Intents does `com.dofun.variety` expose at runtime?** — manifiesto analizado estáticamente. Confirmar con `dumpsys package com.dofun.variety` una vez con root.
+11. **Raw MCU byte format** — `writeUartData` y el callback `onUartData` usan `byte[]` crudo. El protocolo (qué bytes significan velocidad, ADAS, etc.) es desconocido. Necesita logcat con root para capturar tráfico real.

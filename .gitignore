@@ -12,6 +12,7 @@ local.properties
 captures/
 .externalNativeBuild/
 .cxx/
+gradle/gradle-daemon-jvm.properties
 *.aab
 *.apk
 output-metadata.json

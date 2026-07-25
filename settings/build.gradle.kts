@@ -7,7 +7,7 @@ plugins {
 android {
     namespace = "dev.helm.settings"
     compileSdk = 35
-    defaultConfig { minSdk = 34 }
+    defaultConfig { minSdk = 29 }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

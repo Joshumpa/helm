@@ -7,52 +7,25 @@ import android.os.Build
 
 object CarSystem {
 
-    // Package candidates ordered by preference (from manifest_raw.txt analysis)
-    fun openRadio(context: Context) = launchFirstAvailable(
-        context,
-        "com.tw.radio",
-        "android.car.app.radio",
-        "com.syu.radio",
-    )
+    // All packages confirmed on-device via pm list packages -f (TermOne Plus, no root)
+    fun openRadio(context: Context) = launch(context, "com.tw.radio")
 
-    fun openBluetooth(context: Context) = launchFirstAvailable(
-        context,
-        "com.tw.bt",
-        "com.autochips.bluetooth",
-        "com.aotochips.bluetooth",
-    )
+    fun openBluetooth(context: Context) = launch(context, "com.tw.bt")
 
-    fun openCarPlay(context: Context) = launchFirstAvailable(
-        context,
-        "com.tima.carnet.vt",
-        "com.zjinnova.zlink",
-        "net.easyconn",
-    )
+    // com.zjinnova.zlink is in /data/app — user-installed, not pre-flashed
+    fun openCarPlay(context: Context) = launch(context, "com.zjinnova.zlink")
 
-    fun openNavigation(context: Context) = launchFirstAvailable(
-        context,
-        "android.car.app.gps",
-        "com.syu.onekeynavi",
-    )
+    fun openReverseCamera(context: Context) = launch(context, "com.tw.reverse")
 
-    fun openReverseCamera(context: Context) = launchFirstAvailable(
-        context,
-        "com.autochips.android.backcar",
-    )
+    fun openRightCamera(context: Context) = launch(context, "com.tw.rightview")
 
-    fun openMusic(context: Context) = launchFirstAvailable(
-        context,
-        "com.tw.music",
-        "android.car.app.media",
-        "com.syu.music",
-    )
+    fun openCamera360(context: Context) = launch(context, "cn.cardoor.zt360")
 
-    fun openVideo(context: Context) = launchFirstAvailable(
-        context,
-        "com.tw.video",
-        "android.car.app.mp4",
-        "com.syu.video",
-    )
+    fun openMusic(context: Context) = launch(context, "com.tw.music")
+
+    fun openVideo(context: Context) = launch(context, "com.tw.video")
+
+    fun openDvr(context: Context) = launch(context, "com.tw.dvr")
 
     // URI scheme confirmed from manifest — autoVerify=true on EnterSettingActivity
     fun openSettings(context: Context) {
@@ -67,16 +40,12 @@ object CarSystem {
 
     fun getSystemInfo(): HelmDeviceInfo = HelmDeviceInfo(
         soc = Build.HARDWARE,
-        mcuVersion = "",        // TODO: read from MCU bridge once identified
+        mcuVersion = "",        // TODO: read from com.tw.uart once IPC mechanism confirmed
         systemVersion = Build.VERSION.RELEASE,
     )
 
-    private fun launchFirstAvailable(context: Context, vararg packages: String) {
-        val pm = context.packageManager
-        for (pkg in packages) {
-            val intent = pm.getLaunchIntentForPackage(pkg) ?: continue
-            context.startActivity(intent)
-            return
-        }
+    private fun launch(context: Context, pkg: String) {
+        val intent = context.packageManager.getLaunchIntentForPackage(pkg) ?: return
+        context.startActivity(intent)
     }
 }

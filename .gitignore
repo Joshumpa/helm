@@ -1,38 +1,37 @@
-# Gradle files
+# ─── Gradle ───────────────────────────────────────────────────────────────────
 .gradle/
 build/
+**/build/
 
-# Local configuration file (sdk path, etc)
+# ─── Android build outputs ────────────────────────────────────────────────────
+*.apk
+*.aab
+*.keystore
+*.jks
+output-metadata.json
+
+# ─── Android Studio / IntelliJ ────────────────────────────────────────────────
+.idea/
+*.iml
 local.properties
-
-# Log/OS Files
-*.log
-
-# Android Studio generated files and folders
 captures/
 .externalNativeBuild/
 .cxx/
+
+# Daemon JVM config is machine-specific (JetBrains JDK on dev, Temurin on CI)
 gradle/gradle-daemon-jvm.properties
-*.aab
-*.apk
-output-metadata.json
 
-# IntelliJ
-*.iml
-.idea/
-misc.xml
-deploymentTargetDropDown.xml
-render.experimental.xml
+# ─── Profiling & diagnostics ──────────────────────────────────────────────────
+*.hprof
+*.log
 
-# Keystore files
-*.jks
-*.keystore
+# ─── OS artifacts ─────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
 
-# Google Services (e.g. APIs or Firebase)
+# ─── Secrets ──────────────────────────────────────────────────────────────────
 google-services.json
 
-# Android Profiling
-*.hprof
-
+# ─── RE workspace (dofun-analysis/) ───────────────────────────────────────────
+# Entire directory ignored — binaries, APK dumps, decompiled source, and analysis docs
 dofun-analysis/
-dofun-analysis/apks/dofun.apk

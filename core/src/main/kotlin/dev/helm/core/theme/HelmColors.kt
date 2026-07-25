@@ -15,7 +15,7 @@ val HelmSuccess = Color(0xFF30D158)
 val HelmWarning = Color(0xFFFF9F0A)
 val HelmError = Color(0xFFFF453A)
 
-internal val PlaceholderColors = listOf(
+val PlaceholderColors = listOf(
     Color(0xFF1565C0),
     Color(0xFF2E7D32),
     Color(0xFF6A1B9A),

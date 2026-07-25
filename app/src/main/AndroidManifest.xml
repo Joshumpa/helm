@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Launcher -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
@@ -31,11 +32,14 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE" />
 
-    <!-- System (READ_LOGS requires system app; declared for when Helm runs as system) -->
-    <uses-permission android:name="android.permission.READ_LOGS" />
+    <!-- System — requires Helm to be installed as a system app (root, Phase 3+) -->
+    <!-- READ_LOGS is signature-level; suppressed because Helm targets system install -->
+    <uses-permission
+        android:name="android.permission.READ_LOGS"
+        tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- BIND_NOTIFICATION_LISTENER_SERVICE goes on the <service> element, not here -->
 
     <application
         android:name=".HelmApplication"

@@ -34,4 +34,4 @@ google-services.json
 *.hprof
 
 dofun-analysis/
-dofun.apk
+dofun-analysis/apks/dofun.apk

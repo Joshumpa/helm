@@ -1,27 +1,72 @@
 package dev.helm.launcher.ui
 
 import android.content.Context
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.helm.core.Spacing
+import dev.helm.core.theme.HelmPrimary
+import dev.helm.core.theme.HelmSubtext
+import dev.helm.core.theme.HelmSurface
 import dev.helm.core.theme.HelmTheme
 import dev.helm.launcher.AppEntry
 import dev.helm.launcher.LauncherAction
 import dev.helm.launcher.LauncherViewModel
+import dev.helm.launcher.media.NowPlayingViewModel
 import dev.helm.sdk.CarSystem
 
 @Composable
-fun HelmLauncher(vm: LauncherViewModel = viewModel()) {
+fun HelmLauncher(
+    vm: LauncherViewModel = viewModel(),
+    nowPlayingVm: NowPlayingViewModel = viewModel(),
+) {
     val context = LocalContext.current
+    var showNowPlaying by remember { mutableStateOf(false) }
+
+    AnimatedContent(targetState = showNowPlaying, label = "screen") { nowPlaying ->
+        if (nowPlaying) {
+            NowPlayingScreen(onBack = { showNowPlaying = false }, vm = nowPlayingVm)
+        } else {
+            HomeScreen(
+                vm = vm,
+                nowPlayingVm = nowPlayingVm,
+                context = context,
+                onOpenNowPlaying = { showNowPlaying = true },
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeScreen(
+    vm: LauncherViewModel,
+    nowPlayingVm: NowPlayingViewModel,
+    context: Context,
+    onOpenNowPlaying: () -> Unit,
+) {
+    val media by nowPlayingVm.media.collectAsState()
 
     HelmTheme {
         Column(
@@ -35,9 +80,45 @@ fun HelmLauncher(vm: LauncherViewModel = viewModel()) {
                     .padding(horizontal = Spacing.lg, vertical = Spacing.md),
             )
 
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+            // Mini player — visible only when something is playing
+            if (media.title.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(HelmSurface)
+                        .clickable(onClick = onOpenNowPlaying)
+                        .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("♪", style = MaterialTheme.typography.titleLarge, color = HelmPrimary)
+                    Spacer(Modifier.width(Spacing.md))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            text = media.title,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = media.artist,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = HelmSubtext,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(
+                        text = if (media.isPlaying) "▶" else "⏸",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = HelmPrimary,
+                    )
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+            }
 
             AppGrid(
                 apps = vm.grid,
@@ -47,9 +128,7 @@ fun HelmLauncher(vm: LauncherViewModel = viewModel()) {
                     .padding(Spacing.md),
             )
 
-            HorizontalDivider(
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-            )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
             Hotseat(
                 apps = vm.hotseat,
@@ -64,19 +143,19 @@ fun HelmLauncher(vm: LauncherViewModel = viewModel()) {
 
 private fun handleLaunch(context: Context, entry: AppEntry) {
     when (entry.action) {
-        LauncherAction.RADIO -> CarSystem.openRadio(context)
-        LauncherAction.BLUETOOTH -> CarSystem.openBluetooth(context)
-        LauncherAction.CARPLAY -> CarSystem.openCarPlay(context)
+        LauncherAction.RADIO          -> CarSystem.openRadio(context)
+        LauncherAction.BLUETOOTH      -> CarSystem.openBluetooth(context)
+        LauncherAction.CARPLAY        -> CarSystem.openCarPlay(context)
         LauncherAction.REVERSE_CAMERA -> CarSystem.openReverseCamera(context)
-        LauncherAction.RIGHT_CAMERA -> CarSystem.openRightCamera(context)
-        LauncherAction.CAMERA_360 -> CarSystem.openCamera360(context)
-        LauncherAction.MUSIC -> CarSystem.openMusic(context)
-        LauncherAction.VIDEO -> CarSystem.openVideo(context)
-        LauncherAction.DVR -> CarSystem.openDvr(context)
-        LauncherAction.EQ -> CarSystem.openEq(context)
-        LauncherAction.AUX -> CarSystem.openAux(context)
-        LauncherAction.CAR_SETTINGS -> CarSystem.openCarSettings(context)
-        LauncherAction.SETTINGS -> CarSystem.openSettings(context)
-        LauncherAction.SCREENSAVER -> CarSystem.triggerScreenSaver(context)
+        LauncherAction.RIGHT_CAMERA   -> CarSystem.openRightCamera(context)
+        LauncherAction.CAMERA_360     -> CarSystem.openCamera360(context)
+        LauncherAction.MUSIC          -> CarSystem.openMusic(context)
+        LauncherAction.VIDEO          -> CarSystem.openVideo(context)
+        LauncherAction.DVR            -> CarSystem.openDvr(context)
+        LauncherAction.EQ             -> CarSystem.openEq(context)
+        LauncherAction.AUX            -> CarSystem.openAux(context)
+        LauncherAction.CAR_SETTINGS   -> CarSystem.openCarSettings(context)
+        LauncherAction.SETTINGS       -> CarSystem.openSettings(context)
+        LauncherAction.SCREENSAVER    -> CarSystem.triggerScreenSaver(context)
     }
 }

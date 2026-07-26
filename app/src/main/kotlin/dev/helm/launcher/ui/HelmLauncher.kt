@@ -11,7 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +40,8 @@ import dev.helm.launcher.theme.ThemeViewModel
 import dev.helm.sdk.CarSystem
 import dev.helm.themes.ThemeDefaults
 
+private enum class Screen { Home, NowPlaying, Settings }
+
 @Composable
 fun HelmLauncher(
     vm: LauncherViewModel = viewModel(),
@@ -44,18 +50,25 @@ fun HelmLauncher(
 ) {
     val variant by themeVm.variant.collectAsState()
     val colorScheme = ThemeDefaults.schemeFor(variant, isSystemInDarkTheme())
-    var showNowPlaying by remember { mutableStateOf(false) }
+    var screen by remember { mutableStateOf(Screen.Home) }
 
     HelmTheme(colorScheme = colorScheme) {
-        AnimatedContent(targetState = showNowPlaying, label = "screen") { nowPlaying ->
-            if (nowPlaying) {
-                NowPlayingScreen(onBack = { showNowPlaying = false }, vm = nowPlayingVm)
-            } else {
-                HomeScreen(
+        AnimatedContent(targetState = screen, label = "screen") { current ->
+            when (current) {
+                Screen.NowPlaying -> NowPlayingScreen(
+                    onBack = { screen = Screen.Home },
+                    vm = nowPlayingVm,
+                )
+                Screen.Settings -> SettingsScreen(
+                    themeVm = themeVm,
+                    onBack = { screen = Screen.Home },
+                )
+                Screen.Home -> HomeScreen(
                     vm = vm,
                     nowPlayingVm = nowPlayingVm,
                     context = LocalContext.current,
-                    onOpenNowPlaying = { showNowPlaying = true },
+                    onOpenNowPlaying = { screen = Screen.NowPlaying },
+                    onOpenSettings = { screen = Screen.Settings },
                 )
             }
         }
@@ -68,6 +81,7 @@ private fun HomeScreen(
     nowPlayingVm: NowPlayingViewModel,
     context: Context,
     onOpenNowPlaying: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     val media by nowPlayingVm.media.collectAsState()
 
@@ -76,15 +90,25 @@ private fun HomeScreen(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background),
     ) {
-        ClockBar(
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = Spacing.lg, vertical = Spacing.md),
-        )
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            ClockBar(modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(Spacing.sm))
+            IconButton(onClick = onOpenSettings) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = "Configuración",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
-        // Mini player — neumorphic card, animated on press
         if (media.title.isNotEmpty()) {
             Row(
                 modifier = Modifier

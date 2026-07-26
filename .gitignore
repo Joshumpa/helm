@@ -31,7 +31,3 @@ Thumbs.db
 
 # ─── Secrets ──────────────────────────────────────────────────────────────────
 google-services.json
-
-# ─── RE workspace (dofun-analysis/) ───────────────────────────────────────────
-# Entire directory ignored — binaries, APK dumps, decompiled source, and analysis docs
-dofun-analysis/

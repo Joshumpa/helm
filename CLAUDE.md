@@ -66,26 +66,6 @@ Android/Gradle commands. This section will be updated then.
 
 ---
 
-## Dev Tools (Phase 1)
-
-ADB is available without additional installation:
-```
-C:\Users\Josh\AppData\Local\Android\Sdk\platform-tools\adb.exe
-```
-
-jadx (decompiler) is installed at:
-```
-D:\Repos\helm\dofun-analysis\jadx\bin\jadx.bat
-```
-
-jadx requires the Android Studio JBR — set before running:
-```powershell
-$env:JAVA_HOME = "D:\AndroidStudio\jbr"
-$env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
-```
-
----
-
 ## Hardware & Firmware (reference unit)
 
 | Field | Value |
@@ -107,17 +87,6 @@ $env:PATH = "$env:JAVA_HOME\bin;$env:PATH"
 | System version | V13.1.1_20260408.141817_OS-EN |
 | App/Theme version | \13_20260408.140850_APP-THEME1 |
 
-The `test-keys` build tag suggests root may be achievable via standard test-key exploits.
-This matters because direct MCU communication likely requires system-level access.
-
-The USB-A ports on this unit are **host-mode only** (confirmed green-colored ports),
-so USB ADB is not possible from the standard ports. Use wireless ADB.
-
-Developer Options unlock code: **7890** (confirmed working on this unit).
-Factory settings unlock code: **8888**.
-Wireless Debugging option is **not present** in Developer Options on this unit — must
-enable ADB via terminal sideload instead.
-
 ---
 
 ## OEM Details (Dofun)
@@ -131,46 +100,6 @@ enable ADB via terminal sideload instead.
 | Plugin framework | RePlugin by Qihoo 360 |
 | Internal URI scheme | `launcher://variety/theme/category/one` |
 
-All reverse engineering starts from this package. Useful ADB starting points:
-
-```bash
-# Dump the full package manifest
-adb shell dumpsys package com.dofun.variety
-
-# List all exported components
-adb shell cmd package dump com.dofun.variety
-
-# Watch Dofun's logcat output live (PowerShell syntax)
-$pid = & adb shell pidof com.dofun.variety; adb logcat --pid=$pid
-
-# Dump all running services
-adb shell dumpsys activity services
-
-# List all broadcast receivers registered at runtime
-adb shell dumpsys activity broadcasts
-
-# Try root immediately on this test-keys build
-adb shell su
-adb root
-```
-
-Local analysis artifacts in `dofun-analysis/`:
-- `dofun.apk` — downloaded from PGYER (v168)
-- `apps_config.json`, `apps_match_config.json`, `link_icon_config.json` — extracted assets
-- `manifest_raw.txt` — decoded AndroidManifest via aapt2
-- `kp.jar` — extracted default theme plugin
-- `kp-assets/` — key JSON configs from kp.jar (ADAS, speed, media, weather, hotseat)
-- `kp-src/` — kp.jar decompiled via jadx (RePlugin framework only, no business logic)
-- `dofun-src/` — main APK decompiled via jadx (Jiagu stub only, no business logic)
-- `jadx/` — jadx 1.5.1 binary
-- `apks/` — APKs pulled from device via TermOne Plus `cp /system_tw/priv-app/... /sdcard/`
-  - `com.tw.uart.apk` — MCU UART service (713 KB)
-  - `CarMate.apk` — MCU bridge app layer (7.3 MB)
-  - `com.tw.reverse_3f4d.apk` — reverse camera app (10.4 MB)
-- `uart-src/` — com.tw.uart decompiled — **fully readable, critical IPC findings**
-- `carmate-src/` — CarMate decompiled — partial (18 errors), business logic readable
-- `reverse-src/` — com.tw.reverse decompiled — partial, manifest + activities readable
-
 ---
 
 ## Phase 1 Findings
@@ -183,7 +112,7 @@ All OEM packages live in the `/system_tw/` partition, separate from `/system/`.
 | Function | Package (confirmed) |
 |---|---|
 | MCU UART (low-level) | `com.tw.uart` ← **primary MCU channel** (system UID, AIDL) |
-| MCU intermediary (?) | `com.tw.carinfoservice` ← **bind action found in CarMate source — NOT in original package map, may not be installed** |
+| MCU intermediary | `com.tw.carinfoservice` ← **confirmed NOT installed** (logcat boot error) — CarMate references it but it doesn't exist on this firmware |
 | MCU bridge (app layer) | `com.dofun.carassistant.car` (CarMate) ← binds to carinfoservice, not uart directly |
 | Radio | `com.tw.radio` |
 | Bluetooth | `com.tw.bt` |
@@ -196,7 +125,7 @@ All OEM packages live in the `/system_tw/` partition, separate from `/system/`.
 | 360 camera | `cn.cardoor.zt360` |
 | Dashcam / DVR | `com.tw.dvr` |
 | CarPlay / Mirror | `com.zjinnova.zlink` (ZLINK — only one confirmed installed) |
-| Steering wheel | `com.tw.keypad` |
+| Steering wheel | `com.tw.keypad` — main activity: `com.tw.keypad.SteeringWheelActivity` (APK not extracted) |
 | Car settings | `com.dofun.carsetting` |
 | Weather | `com.dofun.dofunweather.main` |
 | Launcher | `com.dofun.variety` |
@@ -281,45 +210,194 @@ adb shell content query --uri content://com.dofun.variety.ExportedProvider
 
 ### MCU → Android Data Channel (fully documented)
 
-The launcher theme plugin (`kp.jar`) receives live vehicle data from the MCU.
-The source APK is **`com.tw.uart`** — confirmed present in `/system_tw/priv-app/`.
-It handles raw UART/serial communication with the MCU using the `android-serialport-api`
-library (JNI, native `libserial_port.so`). Data flows upward to
-`com.dofun.carassistant.car` (CarMate) via AIDL callback.
+**Serial ports on device:** `/dev/ttyS0`, `/dev/ttyS1` (=Bluetooth), `/dev/ttyS2`,
+`/dev/ttyS3`, `/dev/ttyS4`, `/dev/ttyS7`. MCU port is one of ttyS0/2/3/4/7.
+Confirmed via `tty_devices.txt` and `props_mcu.txt`.
 
-**IPC mechanism: AIDL Binder** — confirmed via jadx decompilation of `com.tw.uart.apk`.
+**True MCU architecture (confirmed from logcat.bin and twservice-src decompilation):**
+
+```
+MCU (hardware) ──serial──▶ libtwutil2.so (native, PID 1941, tag "twutil2")
+                                    │  JNI / android.tw.john.TWUtil
+                         ┌──────────┴──────────────────────┐
+                         ▼                                  ▼
+              com.tw.service (TWService)          privileged apps (Dofun
+              system events only:                 launcher plugin, etc.)
+              volume, night/day, source           vehicle data: speed, AC,
+              switch, screen rotation             ADAS (via TWUtil directly)
+                         │
+                  sendBroadcast (limited)
+                  pm hide/unhide packages
+```
+
+**`android.tw.john.TWUtil`** — the real MCU subscription API.
+A hidden system class provided by AllWinner in the platform SDK. Any process with
+`android:sharedUserId="android.uid.system"` can use it. Helm requires root to access.
+
+Usage pattern (from `twservice-src/com/p018tw/service/C0282Pa.java`):
+```java
+// Full subscription list — all 30 codes TWService listens to
+twUtil.open(new short[]{
+    258, 260, 516, 517, 528, 262, 263, 266, 274,      // 0x102–0x112
+    513, 514, 515, 523, 524,                            // 0x201–0x20C
+    769, 770, 772, 1028,                                // 0x301–0x404
+    1281, 1285, 1286, 1287, 1288, 1289, 1304,           // 0x501–0x518
+    -25088, -25071, -24816, -24805, -24804              // 0x9E00–0x9F1C (signed short)
+});
+twUtil.start();  // starts background listener thread
+// Receive events in overridden handleMessage(Message msg)
+// Send commands: twUtil.write(int code, int arg1, int arg2, byte[] data)
+```
+
+**TWUtil message codes** — full subscription list decoded (from `HandlerC0341ka.java` + logcat):
+
+Direction key: MCU→A = MCU to Android (inbound); A→MCU = Android to MCU (outbound only); ↔ = bidirectional.
+
+| Code (hex) | Dec | Dir | Description |
+|---|---|---|---|
+| `0x0102` | 258 | MCU→A | Config / ACK |
+| `0x0104` | 260 | MCU→A | Climate data byte array (temperature zones) |
+| `0x0106` | 262 | MCU→A | Volume levels — obj[0]=media vol → `setStreamVolume(stream5, vol)`; obj[1]=secondary level |
+| `0x0107` | 263 | ↔ | Time sync — Android pushes time+date+12/24h to MCU RTC on `TIME_TICK`/`TIME_SET`; subscribed for echo/ACK |
+| `0x010A` | 266 | MCU→A | MCU firmware version string (ASCII, len=30) |
+| `0x0112` | 274 | MCU→A | Status word — bit 15=extra flag; queries `Settings.System["ISSHOW_FAN"]`; bit field encodes AC/fan/source state |
+| `0x0201` | 513 | MCU→A | Source/mode selection — arg2: 1=src1 2=src2 3=src3 4=src4 38=AUX; also fired as **33281** (0x8201, bit15 set) |
+| `0x0202` | 514 | MCU→A | Heartbeat (every ~3 sec, arg1=state) |
+| `0x0203` | 515 | MCU→A | Volume change (steering wheel button) — `arg1 & 0x7FFFFFFF`=current level; `arg1 & 0x80000000`≠0=muted; `arg2 & 0x7FFFFFFF`=max level → triggers volume OSD overlay |
+| `0x0204` | 516 | MCU→A | Day/Night mode (arg1: 1=night, 0=day) |
+| `0x0205` | 517 | MCU→A | CarPlay/Mirror session active — arg1≠0=active, arg1=0=ended; stored in `f793Vc`; blocks YouTube PiP |
+| `0x020B` | 523 | MCU→A | Reverse gear engaged — arg1=1 in reverse, arg1=0 not; stored in `C0282Pa.f611Rh` |
+| `0x020C` | 524 | MCU→A | Lateral camera trigger — arg1=1 launch rightView, arg1=2 launch leftView, arg1=0 dismiss |
+| `0x0210` | 528 | MCU→A | Screen rotation (arg1: 1=90°, 2=180°, 3=270°) → `IWindowManager.freezeRotation()` |
+| `0x0301` | 769 | ↔ | Audio source — MCU→A on change; A→MCU `write(769, 192, srcId)`; IDs: 1=BT 2=AUX 3=USB-music 4=USB-video 5=CarPlay 7=radio 192=idle |
+| `0x0302` | 770 | MCU→A | BT phone call — arg1=0 ended (unmute+restore source); arg1≠0 active (mute+switch to call audio) |
+| `0x0304` | 772 | A→MCU | Reverse camera active ack — `write(772,1)`=camera showing, `write(772,0)`=closed; MCU stores in `f642Fd` |
+| `0x0404` | 1028 | MCU→A | Touch zone bitmask — when bits 0x22 set, shows touch-area calibration overlay (`ta_layout`) |
+| `0x0501` | 1281 | ↔ | Touch injection — MCU injects touch via `InteractionController.touchDown()`; A→MCU `write(1281, x, 2, byte[]{x,y})` |
+| `0x0505` | 1285 | MCU→A | Door state — obj[0]&0xF8: bit6=driver, bit7=passenger, bit4-5=rear doors, bit3=trunk; drives door overlay |
+| `0x0506` | 1286 | MCU→A | Reverse camera resolution — obj[0..1]=width, obj[2..3]=height (LE shorts); used to compute display scaling |
+| `0x0507` | 1287 | MCU→A | Parking radar 8-sensor — bytes 0-3=front distances, byte4=front max, bytes 5-8=rear distances, byte9=rear max; drives `RadarView` |
+| `0x0508` | 1288 | MCU→A | Outdoor ambient temperature — obj[1]=raw °C (127=invalid); displayed as `"Ext N°C"` in AC popup |
+| `0x0509` | 1289 | MCU→A | Full AC/climate state — multi-byte: AC on/off, fan speed+direction, left/right seat setpoints, flags (MAX/rear-defrost/recirc/ECO), blower zone |
+| `0x0518` | 1304 | MCU→A | MCU RTC time sync on boot — 7-byte packet (hour/min/sec/year/month/day); Android sets system clock; one-shot |
+| `0x9E00` | -25088 | MCU→A | Foreground activity ID — arg1 stored in `mActivity`; used to decide audio source auto-restore |
+| `0x9E11` | -25071 | MCU→A | Remote source-change request — arg2=target source ID, bit7="stop if current"; relays to code 769; from secondary controller |
+| `0x9F10` | -24816 | ↔ | Power-off countdown — MCU→A: arg2=ms before shutdown, schedules `REQUEST_SHUTDOWN`; A→MCU: `write(40720, 0, ms)` (3000 or 7000 ms) |
+| `0x9F1B` | -24805 | MCU→A | Hardware mute signal — arg1=0 unmuted, arg1≠0 muted; applies to `AudioManager` stream 3 (STREAM_MUSIC) |
+| `0x9F1C` | -24804 | MCU→A | Reverse camera stream active — arg1=1 signal live, arg1=0 gone; propagated via AIDL `onReverseStatus()`; updates `f852ra` |
+
+**TWUtil outbound-only commands** (not in subscription list — Android → MCU):
+
+| Code (hex) | Decimal | Purpose |
+|---|---|---|
+| `0x9F1A` | 40730 | System shell command — payload is ASCII string e.g. `"pm hide com.tw.ac"` |
+
+**Additional TWUtil codes** (observed in `com.tw.reverse` subscription, absent from TWService):
+
+| Code (hex) | Dec | Description |
+|---|---|---|
+| `0x010B` | 267 | Unknown — subscribed by reverse camera app immediately after 266 (firmware version); possibly a secondary version field |
+| `0x050E` | 1294 | Unknown — subscribed by reverse camera alongside radar/camera codes (1286, 1287); purpose unconfirmed |
+
+Speed/ADAS/AC data codes are consumed by Dofun's privileged theme plugin directly
+via TWUtil — not distributed through TWService.
+
+**Native library stack** (confirmed from `/system_tw/lib/`):
+- `libtwutil2.so` — MCU communication (primary, used by TWUtil)
+- `libtwutilcan.so` — CAN bus variant
+- `libSerialPort_jni.so` — low-level serial port JNI (android-serialport-api)
+- `libadas.so` — ADAS processing
+- `tuner_8035.so` — QN8035 FM/AM tuner (matches hardware spec)
+- `libimobiledevice.so` + `libplist.so` + `libusbmuxd.so` — iOS/CarPlay via USB
+
+**No custom Binder services** — `service list` returns 155 standard Android services only.
+All com.tw.* IPC uses bound services (bindService) or TWUtil, not registered Binder names.
+Notable standard service available: `serial: [android.hardware.ISerialManager]` (index 40).
+
+**`com.tw.service` (TWService) role** — system event dispatcher, NOT vehicle data:
+- Subscribes to MCU volume/mode/rotation events via TWUtil
+- Uses `pm hide`/`pm unhide` via `TWUtil.write(0x9F1A, ...)` to show/hide source apps (com.tw.ac, com.tw.radio, com.tw.color, com.tw.dvd, etc.)
+- Sends limited broadcasts: `com.unisound.intent.action.*` (voice assistant),
+  `com.zjinnova.zlink.action.OUT_DARK_*` (ZLINK sleep), `com.baony.tw360.action.rotate`
+- Writes to `/sys/class/tw/misc/navi` sysfs (exact purpose unknown)
+- `onBind()` returns null — not bindable, no AIDL interface
+
+**`com.tw.service.xt` (CommandService) role** — steering wheel media button dispatcher:
+- Exposes AIDL interface `ITWCommandAidl` (bind action `com.tw.service.xt`) for media button commands
+- `com.tw.keypad` (APK not yet extracted) receives physical button press from MCU and calls this AIDL
+- `CommandService.sendSystemFunction()` dispatch logic:
+
+| AIDL method | Radio source (mSource=1 or 9) | All other sources |
+|---|---|---|
+| `mediaNext()` (tx 55) | `TWUtil.write(513, 1, 19)` — AVRCP next track | `sendKeyCode(87)` KEYCODE_MEDIA_NEXT |
+| `mediaPre()` (tx 56) | `TWUtil.write(513, 1, 21)` — AVRCP prev track | `sendKeyCode(88)` KEYCODE_MEDIA_PREVIOUS |
+| `mediaPlay()` (tx 57) | n/a | `sendKeyCode(85)` KEYCODE_MEDIA_PLAY_PAUSE |
+| `mediaPause()` (tx 58) | n/a | `sendKeyCode(127)` KEYCODE_MEDIA_STOP |
+
+- Full steering wheel media button chain:
+```
+MCU (physical button press)
+    → com.tw.keypad (APK not extracted — MCU→keypad signal path unconfirmed)
+    → ITWCommandAidl.mediaNext() / mediaPre() / mediaPlay() / mediaPause()
+    → CommandService.sendSystemFunction()
+    → sendKeyCode(87/88/85/127)    ← normal media sources
+    OR TWUtil.write(513, 1, 19/21) ← radio source only (AVRCP-style)
+```
+
+**`com.tw.core` (TWCore) role** — platform services host, NOT vehicle data:
+- Runs `MainService` + `DaemonService` watchdog + `MessengerService` (Messenger IPC)
+- Contains `com.tw.core.track` package — passive GPS trip logger (`GpsModel`, `CoordType`)
+- Shows notification overlay via `NotificationReceiver`/`NotificationView`
+- Hidden `MainActivity` can install `launcher.apk` or `TWCore.apk` from `/sdcard/DoFun/`
+- Bundles Eclipse Paho MQTT library (no active usage sites found in source)
+- No TWUtil subscription, no MCU codes, no AIDL. Helm can ignore this entirely.
+
+**`com.tw.coreservice` (TDService) role** — watchdog only:
+- Monitors if `com.tw.core` is running, restarts it via `Intent("com.tw.core.model.MainService")`
+- Self-updates TDService.apk from remote server
+- Captures logcat on crash and uploads to cloud
+- Has NOTHING to do with MCU data
+
+**Raw UART frame format** (for `com.tw.uart` direct path via `writeUartData` / `onUartDataUpdate`):
+```
+byte[0]     = 0xF2          ← frame start marker
+byte[1]     = dataType      (0x00=normal, 0xA0=firmware update)
+byte[2]     = cmdType       ← event type identifier
+byte[3]     = dataLen N     ← payload byte count
+byte[4..N]  = payload
+byte[4+N]   = checksum = (0xFF - sum(bytes[1..4+N-1])) & 0xFF
+Baud rate: 115200
+```
+
+**AIDL interface for raw UART** (still valid, for root path):
 
 AIDL interface name: `com.tw.uart.IUartController`
 Bind action: `com.tw.uart.UartService.Bind`
 
 | Transaction | Method | Purpose |
-|-------------|--------|---------|
+|---|---|---|
 | 1 | `registerCallback(IUartReceiver cb)` | Subscribe to raw MCU bytes |
 | 2 | `unregisterCallback(IUartReceiver cb)` | Unsubscribe |
-| 3 | `openUart(int baudRate, String dev_ttyS)` | Open serial port — path passed by caller, NOT hardcoded |
+| 3 | `openUart(int baudRate, String dev_ttyS)` | Open serial port |
 | 4 | `closeUart()` | Close serial port |
 | 5 | `writeUartData(byte[] data)` | Send raw command bytes to MCU |
 | 6 | `updateDataTime(Bundle b)` | Set polling interval (default 50 ms, min 10 ms) |
 
-**Correction from initial docs:** The callback interface is `IUartReceiver` (not `IUartCallback`),
-method is `onUartDataUpdate(byte[] bytes)` (not `onUartData`). Confirmed from `uart-src/resources/com/tw/uart/IUartReceiver.aidl`.
+Callback: `void onUartDataUpdate(byte[] bytes)` and `void onExtendedInterface(Bundle bundle)`.
+Log tags: `"UartService"` (prints dev_ttyS path on open), `"SerialPort"`.
 
-Callback delivers: `void onUartDataUpdate(byte[] bytes)` — raw bytes, format unknown (needs logcat).
-
-Log tags from `com.tw.uart` (confirmed from source):
-- `"UartService"` — service lifecycle, openUart events (prints the actual dev_ttyS path)
-- `"SerialPort"` — native serial port open/error events
-
-When ADB is available, this command reveals the serial device path:
-```bash
-adb logcat -s UartService:D   # look for: "dev_ttyS:/dev/ttyXXX"
+**Live MCU messages observed** (from logcat.bin, unit parked/idle):
+```
+I twutil2: Gui_ListenDataFromMcu what=202 arg1=6 arg2=0   ← heartbeat ~3 sec
+I twutil2: libDataFromMcu what=10a, bytes: 54 31 33 2e... ← "T13.1.1-10" version
+D TWService: mcuVersion:A6
+D TWService: dspCode:3 isMagicEQ=true
+D TWService: 0x0112 msg.arg1:8113
 ```
 
-**Critical constraint: `android:sharedUserId="android.uid.system"`**
-`com.tw.uart` and `com.tw.reverse` both run as the Android system user.
-Only apps with the same UID can bind to `UartService`. Helm must be installed as a
-system app (requires root) to receive MCU data directly. This is the architectural
-reason CarMate exists as the bridge — it is also a system app.
+**Helm MCU strategy:**
+- **Without root** (Phase 3 start): GPS speed + MediaSession media + standard Android APIs
+- **With root** (system app install): use `android.tw.john.TWUtil` directly for all MCU events
 
 **Speed:** delivered continuously, thresholds at 5, 10, 20, 30, 50, 70, 90 km/h.
 Displayed as large numeric text (`tv_carspeed_text`, 60sp) + unit (`tv_carspeed_unit`, 22sp).
@@ -328,8 +406,7 @@ Displayed as large numeric text (`tv_carspeed_text`, 60sp) + unit (`tv_carspeed_
 - `car_effect_adas_warning_stop_go` — stop/go warning
 - `car_effect_adas_warning_car` — close-distance warning
 - `car_effect_adas_warning_lane` — lane departure
-- `car_effect_adas_warning_lane_left` — lane departure left
-- `car_effect_adas_warning_lane_right` — lane departure right
+- `car_effect_adas_warning_lane_left` / `lane_right`
 
 **Media widget** displays: song name, 170×170 round album art, progress bar,
 prev/play/next controls. Supports: local music, FM radio, Bluetooth, Spotify,
@@ -337,18 +414,6 @@ Apple Music, YouTube Music, Kugou, Kuwo, Ximalaya.
 
 **Weather widget** shows animated effects for: fine, cloudy, rain, thunderstorm,
 snow, haze.
-
-### APK Code Analysis
-
-The main `classes.dex` is a 360 Jiagu loader stub (`com.stub.StubApp`) — the real
-application code is encrypted inside `libjiagu.so` and decrypted at runtime. jadx
-produces no useful business logic from the main dex. String extraction from the dex
-yielded no passwords or keys.
-
-The Developer Options password for this unit's system Settings APK is embedded in
-the firmware (`/system/priv-app/Settings/Settings.apk`), which requires ADB to pull.
-This is a circular dependency — ADB is needed to read the password, but the password
-is needed to enable wireless ADB.
 
 ### Reverse Camera — Entry Points (confirmed via jadx)
 
@@ -358,8 +423,12 @@ APK: `com.tw.reverse` — also `android:sharedUserId="android.uid.system"`.
 |-------------|-------------|-------|
 | `com.tw.reverse.StreamMediaActivity` | `getLaunchIntentForPackage("com.tw.reverse")` | Main app, LAUNCHER category |
 | `cn.cardoor.desktop.window.floating.intent.action.LAUNCH` | `am start -a` or `sendBroadcast` | Floating window — may work from non-system app |
-| `com.tw.reverse.ReverseActivity` | Not externally accessible | No action in IntentFilter |
-| `com.tw.reverse.RadarService` | Exported service | Parking radar display |
+| `com.tw.reverse.ReverseActivity` | Not externally accessible | No action in IntentFilter; listens for broadcast `Constant.REVERSE_EXIT_FRONT` to auto-finish when gear leaves reverse |
+| `com.tw.reverse.RadarService` | Exported service | Parking radar display — `RadarView2` internally subscribes to code 1287 and calls `showView()`/`hideView()` autonomously |
+
+`RadarService` creates a system overlay window (type 2038 = `TYPE_APPLICATION_OVERLAY`) at 920×460dp or 600×300dp depending on aspect ratio.
+
+`StreamMediaActivity` uses `TWUtil.write(40730, ...)` (`pm enable/disable com.tw.reverse/.StreamMediaActivity`) to show/hide itself — same `0x9F1A` shell command mechanism as TWService.
 
 The same floating window action pattern (`cn.cardoor.desktop.window.*`) appears in
 the `com.tw.reverse` manifest, the `DesktopWindowService` in Dofun, and likely other
@@ -371,43 +440,26 @@ CarMate (`com.dofun.carassistant.car`) emits these broadcasts:
 - `com.dofun.intent.action.TRACK_SWITCH` — media track change notification
 - `com.dofun.location.DESTROY_LOCATIONSERVICE` — location service lifecycle
 
-The MCU data distribution from CarMate to the launcher is likely via a second AIDL
-interface or via direct IPC — not found in the broadcast search. Needs logcat or
-further decompilation of the obfuscated CarMate classes (heavily renamed, a/b/c/...).
+CarMate's `CarService.java` immediately binds to `com.tw.carinfoservice` on create
+(action `com.tw.carinfoservice.CarService.Bind`) — confirming CarMate was designed
+as a UI layer over that missing intermediary. The vehicle data interface that
+`carinfoservice` would have provided included callbacks for:
+- Speed: `D(float speed, String unit)`
+- AC setpoints: `E(float temp, String side)`, `h(float voltage, String)`
+- Door state: `c(boolean open)`
+- Tire pressure: `TirePressureBean` object
+- Driving time: `i(int seconds)`
 
-### ADB Access Attempts
-
-| Method | Result |
-|---|---|
-| USB via green USB-A port | Failed — port is host-mode only |
-| Bugjaeger (Android OTG) | Failed — same host-mode issue |
-| `adb connect 192.168.1.79:5555` | Refused (port closed) |
-| Ports 5037, 4444, 7777, 8888 | All timed out |
-| LADB (Play Store) | Paid app — skipped |
-| TermOne Plus (Play Store) | **Installed and working** — shell access without root |
-| `setprop service.adb.tcp.port 5555` | Ran without error, value confirmed via getprop |
-| `stop adbd` / `start adbd` | Failed — requires root |
-| `kill $(pidof adbd)` | Failed — adbd invisible to non-root ps |
-| `settings put global adb_wifi_enabled 1` | Failed — requires INTERACT_ACROSS_USERS |
-
-Unit IP confirmed: **192.168.1.79** (DHCP — may change on reboot; verify in
-Settings → Wi-Fi → tap connected network before each session)
-
-**Current status:** Terminal shell available via TermOne Plus. ADB port cannot be
-activated without root. `su` binary not present. No root path available from userspace.
-
-**Next unblocking option:** FEL mode (AllWinner bootloader) — requires physical access
-to the PCB to locate the FEL pad/button. Allows flashing a Magisk-patched boot image
-from PC via PhoenixSuit without needing ADB.
+Since `carinfoservice` is not installed on this firmware, **CarMate is a dead end
+for MCU data**. All vehicle signals must come directly via TWUtil.
 
 ### What is still unknown
-- Root access — no `su` binary, ADB not enabled. FEL mode is next option.
-- Raw MCU byte format — what bytes mean speed, ADAS events, etc. (needs logcat with root)
-- How CarMate distributes parsed MCU data to the launcher (second AIDL? broadcast?)
-- What the `ExportedProvider` KV keys contain (needs `adb shell content query`)
-- What plugin APKs RePlugin loads at runtime (needs root to read `/data/data/com.dofun.variety/`)
-- Function of `com.ms.ms2160` (MS912X.apk) — unknown hardware module
-- `com.tw.rightview` entry points — APK not yet decompiled
+- TWUtil codes for speed, AC setpoints, ADAS — consumed directly by Dofun's privileged plugin; code numbers unknown without root.
+- `ExportedProvider` KV contents — may be a usable data channel for Helm; needs `adb shell content query --uri content://com.dofun.variety.ExportedProvider`.
+- Function of `com.ms.ms2160` (MS912X.apk) — unknown hardware module in `/system_tw/`.
+- `com.tw.rightview` entry points — APK not yet analyzed.
+- `com.tw.keypad` MCU signal path — main activity `com.tw.keypad.SteeringWheelActivity` confirmed; which TWUtil code or UART frame triggers it is unknown.
+- TWUtil codes `0x010B` (267) and `0x050E` (1294) — observed in `com.tw.reverse` subscription, purpose unknown.
 
 ---
 
@@ -485,21 +537,3 @@ for the current hardware target. The launcher calls only these — never raw Int
 - Do not design for a single unit — the SDK layer must remain portable.
 - Do not purchase or copy OEM themes.
 
----
-
-## Key Open Questions (Phase 1)
-
-1. ~~Is ADB accessible wirelessly?~~ **Answered** — port 5555 bloqueado. Terminal disponible vía TermOne Plus pero sin root no se puede activar ADB. Próximo paso: FEL mode.
-2. ~~Which system APK delivers MCU data?~~ **Partially answered** — `com.tw.uart` es el canal UART de bajo nivel. CarMate (`com.dofun.carassistant.car`) no se conecta directamente a `com.tw.uart` — se conecta a **`com.tw.carinfoservice`** (acción `com.tw.carinfoservice.CarService.Bind`), un paquete intermediario no mapeado aún. Ver pregunta 12.
-3. ~~How is the reverse camera signal delivered?~~ **Answered** — `com.tw.reverse.StreamMediaActivity` vía `getLaunchIntentForPackage`, o floating window action `cn.cardoor.desktop.window.floating.intent.action.LAUNCH`.
-4. ~~Which CarPlay app does Dofun use?~~ **Answered** — `com.zjinnova.zlink` (ZLINK) es el único confirmado instalado.
-5. **Can we obtain root?** — `su` no existe, ADB no disponible. FEL mode es el siguiente camino viable.
-6. ~~How does `com.tw.uart` deliver data?~~ **Answered** — AIDL Binder. Interface `com.tw.uart.IUartController`, bind action `com.tw.uart.UartService.Bind`. Ver tabla completa arriba.
-7. ~~What Intents does `com.tw.reverse` respond to?~~ **Answered** — ver tabla de entry points arriba. `com.tw.rightview` pendiente.
-8. **What does the `ExportedProvider` KV store contain?** — requiere ADB: `adb shell content query --uri content://com.dofun.variety.ExportedProvider`
-9. **What is `com.ms.ms2160` (MS912X.apk)?** — paquete desconocido en `/system_tw/`. Función sin identificar.
-10. **What Intents does `com.dofun.variety` expose at runtime?** — manifiesto analizado estáticamente. Confirmar con `dumpsys package com.dofun.variety` una vez con root.
-11. **Raw MCU byte format** — `writeUartData` y el callback `onUartDataUpdate` usan `byte[]` crudo. El protocolo (qué bytes significan velocidad, ADAS, etc.) es desconocido. Necesita logcat con root para capturar tráfico real.
-12. **¿Qué es `com.tw.carinfoservice`?** — CarMate se conecta a este paquete (acción `com.tw.carinfoservice.CarService.Bind`), no directamente a `com.tw.uart`. No aparece en el mapa de paquetes inicial. Verificar: `pm list packages | grep carinfo` en TermOne Plus. Podría ser el verdadero intermediario entre `com.tw.uart` y las apps de usuario.
-13. **¿Cómo llegan velocidad y ADAS al launcher de Dofun?** — CarMate usa GPS (`location.getSpeed() * 3.6f`) para velocidad en su propia UI. El canal hacia `com.dofun.variety` para datos MCU es desconocido — no es broadcasts, no es `Settings.Global`. Posiblemente vía `ExportedProvider` o AIDL directo desde `com.tw.carinfoservice`.
-14. **Serial device path** — `openUart(baudRate, dev_ttyS)` recibe la ruta como parámetro, no está hardcodeada. El log de `UartService` la imprime: buscar `"dev_ttyS:"` en logcat con tag `UartService`. Ruta probable: `/dev/ttyS0`–`/dev/ttyS7` (AllWinner A133).

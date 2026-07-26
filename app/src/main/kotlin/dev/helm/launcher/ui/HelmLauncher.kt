@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.HorizontalDivider
@@ -27,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.helm.core.Spacing
@@ -37,6 +42,7 @@ import dev.helm.launcher.LauncherAction
 import dev.helm.launcher.LauncherViewModel
 import dev.helm.launcher.media.NowPlayingViewModel
 import dev.helm.launcher.theme.ThemeViewModel
+import dev.helm.launcher.speed.SpeedViewModel
 import dev.helm.launcher.weather.WeatherViewModel
 import dev.helm.sdk.CarSystem
 import dev.helm.sdk.WeatherDataSource
@@ -51,6 +57,7 @@ fun HelmLauncher(
     nowPlayingVm: NowPlayingViewModel = viewModel(),
     themeVm: ThemeViewModel = viewModel(),
     weatherVm: WeatherViewModel = viewModel(),
+    speedVm: SpeedViewModel = viewModel(),
 ) {
     val variant by themeVm.variant.collectAsState()
     val colorScheme = ThemeDefaults.schemeFor(variant, isSystemInDarkTheme())
@@ -71,6 +78,7 @@ fun HelmLauncher(
                     vm = vm,
                     nowPlayingVm = nowPlayingVm,
                     weatherSource = weatherVm.source,
+                    speedVm = speedVm,
                     context = LocalContext.current,
                     onOpenNowPlaying = { screen = Screen.NowPlaying },
                     onOpenSettings = { screen = Screen.Settings },
@@ -85,11 +93,13 @@ private fun HomeScreen(
     vm: LauncherViewModel,
     nowPlayingVm: NowPlayingViewModel,
     weatherSource: WeatherDataSource,
+    speedVm: SpeedViewModel,
     context: Context,
     onOpenNowPlaying: () -> Unit,
     onOpenSettings: () -> Unit,
 ) {
     val media by nowPlayingVm.media.collectAsState()
+    val speed by speedVm.speedKmh.collectAsState()
 
     Column(
         modifier = Modifier
@@ -103,7 +113,9 @@ private fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ClockBar(modifier = Modifier.weight(1f))
-            Spacer(Modifier.width(Spacing.sm))
+            AnimatedVisibility(visible = speed > 0, enter = fadeIn(), exit = fadeOut()) {
+                SpeedBadge(speedKmh = speed, modifier = Modifier.padding(end = Spacing.sm))
+            }
             WeatherWidget(source = weatherSource, compact = true)
             Spacer(Modifier.width(Spacing.sm))
             IconButton(onClick = onOpenSettings) {
@@ -172,6 +184,26 @@ private fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(Spacing.sm),
+        )
+    }
+}
+
+@Composable
+private fun SpeedBadge(speedKmh: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.Bottom,
+    ) {
+        Text(
+            text = "$speedKmh",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+        Text(
+            text = " km/h",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(bottom = 2.dp),
         )
     }
 }

@@ -182,8 +182,9 @@ All OEM packages live in the `/system_tw/` partition, separate from `/system/`.
 
 | Function | Package (confirmed) |
 |---|---|
-| MCU UART (low-level) | `com.tw.uart` ← **primary MCU channel** |
-| MCU bridge (app layer) | `com.dofun.carassistant.car` (CarMate) |
+| MCU UART (low-level) | `com.tw.uart` ← **primary MCU channel** (system UID, AIDL) |
+| MCU intermediary (?) | `com.tw.carinfoservice` ← **bind action found in CarMate source — NOT in original package map, may not be installed** |
+| MCU bridge (app layer) | `com.dofun.carassistant.car` (CarMate) ← binds to carinfoservice, not uart directly |
 | Radio | `com.tw.radio` |
 | Bluetooth | `com.tw.bt` |
 | Music (local) | `com.tw.music` |
@@ -293,14 +294,26 @@ Bind action: `com.tw.uart.UartService.Bind`
 
 | Transaction | Method | Purpose |
 |-------------|--------|---------|
-| 1 | `registerCallback(IUartCallback cb)` | Subscribe to raw MCU bytes |
-| 2 | `unregisterCallback(IUartCallback cb)` | Unsubscribe |
-| 3 | `openUart(int baudRate, String devPath)` | Open serial port (e.g. `/dev/ttyS?`) |
+| 1 | `registerCallback(IUartReceiver cb)` | Subscribe to raw MCU bytes |
+| 2 | `unregisterCallback(IUartReceiver cb)` | Unsubscribe |
+| 3 | `openUart(int baudRate, String dev_ttyS)` | Open serial port — path passed by caller, NOT hardcoded |
 | 4 | `closeUart()` | Close serial port |
 | 5 | `writeUartData(byte[] data)` | Send raw command bytes to MCU |
 | 6 | `updateDataTime(Bundle b)` | Set polling interval (default 50 ms, min 10 ms) |
 
-Callback delivers: `void onUartData(byte[] rawBytes)` — raw bytes, format unknown (needs logcat).
+**Correction from initial docs:** The callback interface is `IUartReceiver` (not `IUartCallback`),
+method is `onUartDataUpdate(byte[] bytes)` (not `onUartData`). Confirmed from `uart-src/resources/com/tw/uart/IUartReceiver.aidl`.
+
+Callback delivers: `void onUartDataUpdate(byte[] bytes)` — raw bytes, format unknown (needs logcat).
+
+Log tags from `com.tw.uart` (confirmed from source):
+- `"UartService"` — service lifecycle, openUart events (prints the actual dev_ttyS path)
+- `"SerialPort"` — native serial port open/error events
+
+When ADB is available, this command reveals the serial device path:
+```bash
+adb logcat -s UartService:D   # look for: "dev_ttyS:/dev/ttyXXX"
+```
 
 **Critical constraint: `android:sharedUserId="android.uid.system"`**
 `com.tw.uart` and `com.tw.reverse` both run as the Android system user.
@@ -477,7 +490,7 @@ for the current hardware target. The launcher calls only these — never raw Int
 ## Key Open Questions (Phase 1)
 
 1. ~~Is ADB accessible wirelessly?~~ **Answered** — port 5555 bloqueado. Terminal disponible vía TermOne Plus pero sin root no se puede activar ADB. Próximo paso: FEL mode.
-2. ~~Which system APK delivers MCU data?~~ **Answered** — `com.tw.uart` es el canal UART de bajo nivel. `com.dofun.carassistant.car` (CarMate) es la capa de aplicación.
+2. ~~Which system APK delivers MCU data?~~ **Partially answered** — `com.tw.uart` es el canal UART de bajo nivel. CarMate (`com.dofun.carassistant.car`) no se conecta directamente a `com.tw.uart` — se conecta a **`com.tw.carinfoservice`** (acción `com.tw.carinfoservice.CarService.Bind`), un paquete intermediario no mapeado aún. Ver pregunta 12.
 3. ~~How is the reverse camera signal delivered?~~ **Answered** — `com.tw.reverse.StreamMediaActivity` vía `getLaunchIntentForPackage`, o floating window action `cn.cardoor.desktop.window.floating.intent.action.LAUNCH`.
 4. ~~Which CarPlay app does Dofun use?~~ **Answered** — `com.zjinnova.zlink` (ZLINK) es el único confirmado instalado.
 5. **Can we obtain root?** — `su` no existe, ADB no disponible. FEL mode es el siguiente camino viable.
@@ -486,4 +499,7 @@ for the current hardware target. The launcher calls only these — never raw Int
 8. **What does the `ExportedProvider` KV store contain?** — requiere ADB: `adb shell content query --uri content://com.dofun.variety.ExportedProvider`
 9. **What is `com.ms.ms2160` (MS912X.apk)?** — paquete desconocido en `/system_tw/`. Función sin identificar.
 10. **What Intents does `com.dofun.variety` expose at runtime?** — manifiesto analizado estáticamente. Confirmar con `dumpsys package com.dofun.variety` una vez con root.
-11. **Raw MCU byte format** — `writeUartData` y el callback `onUartData` usan `byte[]` crudo. El protocolo (qué bytes significan velocidad, ADAS, etc.) es desconocido. Necesita logcat con root para capturar tráfico real.
+11. **Raw MCU byte format** — `writeUartData` y el callback `onUartDataUpdate` usan `byte[]` crudo. El protocolo (qué bytes significan velocidad, ADAS, etc.) es desconocido. Necesita logcat con root para capturar tráfico real.
+12. **¿Qué es `com.tw.carinfoservice`?** — CarMate se conecta a este paquete (acción `com.tw.carinfoservice.CarService.Bind`), no directamente a `com.tw.uart`. No aparece en el mapa de paquetes inicial. Verificar: `pm list packages | grep carinfo` en TermOne Plus. Podría ser el verdadero intermediario entre `com.tw.uart` y las apps de usuario.
+13. **¿Cómo llegan velocidad y ADAS al launcher de Dofun?** — CarMate usa GPS (`location.getSpeed() * 3.6f`) para velocidad en su propia UI. El canal hacia `com.dofun.variety` para datos MCU es desconocido — no es broadcasts, no es `Settings.Global`. Posiblemente vía `ExportedProvider` o AIDL directo desde `com.tw.carinfoservice`.
+14. **Serial device path** — `openUart(baudRate, dev_ttyS)` recibe la ruta como parámetro, no está hardcodeada. El log de `UartService` la imprime: buscar `"dev_ttyS:"` en logcat con tag `UartService`. Ruta probable: `/dev/ttyS0`–`/dev/ttyS7` (AllWinner A133).

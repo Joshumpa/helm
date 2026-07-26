@@ -14,15 +14,18 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
-        ndk {
-            abiFilters += "armeabi-v7a"
-        }
     }
 
     buildTypes {
+        debug {
+            // No abiFilter — all ABIs supported so the emulator (x86_64) works
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            ndk {
+                abiFilters += "armeabi-v7a"
+            }
         }
     }
 

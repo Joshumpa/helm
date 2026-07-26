@@ -1,5 +1,6 @@
 package dev.helm.sdk
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -35,9 +36,9 @@ object CarSystem {
 
     // URI scheme confirmed from manifest — autoVerify=true on EnterSettingActivity
     fun openSettings(context: Context) {
-        context.startActivity(
-            Intent(Intent.ACTION_VIEW, Uri.parse("launcher://variety/setting"))
-        )
+        try {
+            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("launcher://variety/setting")))
+        } catch (_: ActivityNotFoundException) {}
     }
 
     fun triggerScreenSaver(context: Context) {

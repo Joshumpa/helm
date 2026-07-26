@@ -41,6 +41,7 @@ android {
 dependencies {
     implementation(project(":sdk"))
     implementation(project(":core"))
+    implementation(project(":themes"))
     implementation(project(":widgets"))
 
     implementation(libs.androidx.core.ktx)

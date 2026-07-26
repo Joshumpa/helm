@@ -53,10 +53,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.helm.core.Spacing
-import dev.helm.core.theme.HelmPrimary
-import dev.helm.core.theme.HelmSubtext
-import dev.helm.core.theme.HelmSurface
-import dev.helm.core.theme.HelmTheme
 import dev.helm.launcher.media.NowPlayingViewModel
 import kotlinx.coroutines.delay
 import java.util.concurrent.TimeUnit
@@ -78,129 +74,128 @@ fun NowPlayingScreen(
         }
     }
 
-    HelmTheme {
-        if (media.title.isEmpty()) {
-            NoMediaPlaceholder(
-                onBack = onBack,
-                onOpenSettings = {
-                    context.startActivity(
-                        Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
-                    )
-                },
-            )
-            return@HelmTheme
-        }
+    if (media.title.isEmpty()) {
+        NoMediaPlaceholder(
+            onBack = onBack,
+            onOpenSettings = {
+                context.startActivity(
+                    Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS")
+                )
+            },
+        )
+        return
+    }
 
-        Row(
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        // ── Left: art + info + controls ──────────────────────────────────────
+        Column(
             modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
+                .width(300.dp)
+                .fillMaxHeight()
+                .padding(Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
-            // ── Left: art + info + controls ──────────────────────────────────
-            Column(
+            IconButton(onClick = onBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            AlbumArtImage(
+                bitmap = media.artwork,
                 modifier = Modifier
-                    .width(300.dp)
-                    .fillMaxHeight()
-                    .padding(Spacing.lg),
-                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
-                        tint = HelmSubtext,
-                    )
-                }
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(12.dp)),
+            )
 
-                AlbumArtImage(
-                    bitmap = media.artwork,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .aspectRatio(1f)
-                        .clip(RoundedCornerShape(12.dp)),
+            Spacer(Modifier.height(Spacing.xs))
+
+            Text(
+                text = media.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = media.artist,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            if (media.durationMs > 0) {
+                var seeking by remember { mutableStateOf(false) }
+                var seekValue by remember { mutableFloatStateOf(0f) }
+                val sliderValue = if (seeking) seekValue
+                    else (positionMs.toFloat() / media.durationMs).coerceIn(0f, 1f)
+
+                Slider(
+                    value = sliderValue,
+                    onValueChange = { seeking = true; seekValue = it },
+                    onValueChangeFinished = {
+                        seeking = false
+                        vm.seekTo((seekValue * media.durationMs).toLong())
+                    },
+                    colors = SliderDefaults.colors(
+                        thumbColor = MaterialTheme.colorScheme.primary,
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
                 )
 
-                Spacer(Modifier.height(Spacing.xs))
-
-                Text(
-                    text = media.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onBackground,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = media.artist,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = HelmSubtext,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-
-                // Progress slider
-                if (media.durationMs > 0) {
-                    var seeking by remember { mutableStateOf(false) }
-                    var seekValue by remember { mutableFloatStateOf(0f) }
-                    val sliderValue = if (seeking) seekValue
-                        else (positionMs.toFloat() / media.durationMs).coerceIn(0f, 1f)
-
-                    Slider(
-                        value = sliderValue,
-                        onValueChange = { seeking = true; seekValue = it },
-                        onValueChangeFinished = {
-                            seeking = false
-                            vm.seekTo((seekValue * media.durationMs).toLong())
-                        },
-                        colors = SliderDefaults.colors(thumbColor = HelmPrimary, activeTrackColor = HelmPrimary),
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(formatMs(positionMs), style = MaterialTheme.typography.labelMedium, color = HelmSubtext)
-                        Text(formatMs(media.durationMs), style = MaterialTheme.typography.labelMedium, color = HelmSubtext)
-                    }
-                }
-
-                // Transport controls
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    IconButton(onClick = { vm.skipPrev() }, modifier = Modifier.size(56.dp)) {
-                        Icon(Icons.Filled.SkipPrevious, "Previous", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(36.dp))
-                    }
-                    IconButton(
-                        onClick = { if (media.isPlaying) vm.pause() else vm.play() },
-                        modifier = Modifier.size(64.dp),
-                    ) {
-                        Icon(
-                            imageVector = if (media.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = if (media.isPlaying) "Pause" else "Play",
-                            tint = HelmPrimary,
-                            modifier = Modifier.size(44.dp),
-                        )
-                    }
-                    IconButton(onClick = { vm.skipNext() }, modifier = Modifier.size(56.dp)) {
-                        Icon(Icons.Filled.SkipNext, "Next", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(36.dp))
-                    }
+                    Text(formatMs(positionMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(formatMs(media.durationMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
 
-            VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-
-            // ── Right: lyrics ────────────────────────────────────────────────
-            LyricsView(
-                lyrics = lyrics,
-                positionMs = positionMs,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = { vm.skipPrev() }, modifier = Modifier.size(56.dp)) {
+                    Icon(Icons.Filled.SkipPrevious, "Previous", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(36.dp))
+                }
+                IconButton(
+                    onClick = { if (media.isPlaying) vm.pause() else vm.play() },
+                    modifier = Modifier.size(64.dp),
+                ) {
+                    Icon(
+                        imageVector = if (media.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        contentDescription = if (media.isPlaying) "Pause" else "Play",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(44.dp),
+                    )
+                }
+                IconButton(onClick = { vm.skipNext() }, modifier = Modifier.size(56.dp)) {
+                    Icon(Icons.Filled.SkipNext, "Next", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(36.dp))
+                }
+            }
         }
+
+        VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+        // ── Right: lyrics ────────────────────────────────────────────────────
+        LyricsView(
+            lyrics = lyrics,
+            positionMs = positionMs,
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight(),
+        )
     }
 }
 
@@ -215,10 +210,10 @@ private fun AlbumArtImage(bitmap: Bitmap?, modifier: Modifier = Modifier) {
         )
     } else {
         Box(
-            modifier = modifier.background(HelmSurface, RoundedCornerShape(12.dp)),
+            modifier = modifier.background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Text("♪", style = MaterialTheme.typography.displayMedium, color = HelmSubtext)
+            Text("♪", style = MaterialTheme.typography.displayMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }
@@ -231,22 +226,22 @@ private fun NoMediaPlaceholder(onBack: () -> Unit, onOpenSettings: () -> Unit) {
             .background(MaterialTheme.colorScheme.background),
     ) {
         IconButton(onClick = onBack, modifier = Modifier.align(Alignment.TopStart).padding(Spacing.md)) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = HelmSubtext)
+            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Column(
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
-            Text("Nothing playing", style = MaterialTheme.typography.headlineMedium, color = HelmSubtext)
+            Text("Nothing playing", style = MaterialTheme.typography.headlineMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             Text(
                 "Grant notification access so Helm can read media sessions",
                 style = MaterialTheme.typography.bodyMedium,
-                color = HelmSubtext,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Button(
                 onClick = onOpenSettings,
-                colors = ButtonDefaults.buttonColors(containerColor = HelmPrimary),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
             ) {
                 Text("Open notification settings")
             }

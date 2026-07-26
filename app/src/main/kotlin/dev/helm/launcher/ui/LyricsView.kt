@@ -20,8 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import dev.helm.core.Spacing
-import dev.helm.core.theme.HelmPrimary
-import dev.helm.core.theme.HelmSubtext
 import dev.helm.launcher.media.LrcLine
 import dev.helm.launcher.media.LyricsState
 
@@ -37,14 +35,14 @@ fun LyricsView(
 
             is LyricsState.Loading -> CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center),
-                color = HelmPrimary,
+                color = MaterialTheme.colorScheme.primary,
             )
 
             is LyricsState.Unavailable -> Text(
                 text = "No lyrics found",
                 modifier = Modifier.align(Alignment.Center),
                 style = MaterialTheme.typography.bodyLarge,
-                color = HelmSubtext,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
 
             is LyricsState.Plain -> Text(
@@ -88,7 +86,8 @@ private fun SyncedLyricsView(lines: List<LrcLine>, positionMs: Long) {
                 text = line.text,
                 style = if (current) MaterialTheme.typography.titleMedium
                         else MaterialTheme.typography.bodyMedium,
-                color = if (current) MaterialTheme.colorScheme.onBackground else HelmSubtext,
+                color = if (current) MaterialTheme.colorScheme.onBackground
+                        else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = if (current) FontWeight.Bold else FontWeight.Normal,
                 textAlign = TextAlign.Center,
                 modifier = Modifier

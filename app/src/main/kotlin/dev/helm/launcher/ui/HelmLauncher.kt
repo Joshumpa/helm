@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,34 +28,38 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.helm.core.Spacing
-import dev.helm.core.theme.HelmPrimary
-import dev.helm.core.theme.HelmSubtext
-import dev.helm.core.theme.HelmSurface
 import dev.helm.core.theme.HelmTheme
 import dev.helm.launcher.AppEntry
 import dev.helm.launcher.LauncherAction
 import dev.helm.launcher.LauncherViewModel
 import dev.helm.launcher.media.NowPlayingViewModel
+import dev.helm.launcher.theme.ThemeViewModel
 import dev.helm.sdk.CarSystem
+import dev.helm.themes.ThemeDefaults
 
 @Composable
 fun HelmLauncher(
     vm: LauncherViewModel = viewModel(),
     nowPlayingVm: NowPlayingViewModel = viewModel(),
+    themeVm: ThemeViewModel = viewModel(),
 ) {
-    val context = LocalContext.current
+    val variant by themeVm.variant.collectAsState()
+    val isDark = isSystemInDarkTheme()
+    val colorScheme = ThemeDefaults.schemeFor(variant, isDark)
     var showNowPlaying by remember { mutableStateOf(false) }
 
-    AnimatedContent(targetState = showNowPlaying, label = "screen") { nowPlaying ->
-        if (nowPlaying) {
-            NowPlayingScreen(onBack = { showNowPlaying = false }, vm = nowPlayingVm)
-        } else {
-            HomeScreen(
-                vm = vm,
-                nowPlayingVm = nowPlayingVm,
-                context = context,
-                onOpenNowPlaying = { showNowPlaying = true },
-            )
+    HelmTheme(colorScheme = colorScheme) {
+        AnimatedContent(targetState = showNowPlaying, label = "screen") { nowPlaying ->
+            if (nowPlaying) {
+                NowPlayingScreen(onBack = { showNowPlaying = false }, vm = nowPlayingVm)
+            } else {
+                HomeScreen(
+                    vm = vm,
+                    nowPlayingVm = nowPlayingVm,
+                    context = LocalContext.current,
+                    onOpenNowPlaying = { showNowPlaying = true },
+                )
+            }
         }
     }
 }
@@ -68,76 +73,73 @@ private fun HomeScreen(
 ) {
     val media by nowPlayingVm.media.collectAsState()
 
-    HelmTheme {
-        Column(
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+    ) {
+        ClockBar(
             modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-        ) {
-            ClockBar(
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+        )
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+        if (media.title.isNotEmpty()) {
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = Spacing.lg, vertical = Spacing.md),
-            )
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-
-            // Mini player — visible only when something is playing
-            if (media.title.isNotEmpty()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(HelmSurface)
-                        .clickable(onClick = onOpenNowPlaying)
-                        .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text("♪", style = MaterialTheme.typography.titleLarge, color = HelmPrimary)
-                    Spacer(Modifier.width(Spacing.md))
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = media.title,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onBackground,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = media.artist,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = HelmSubtext,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    .background(MaterialTheme.colorScheme.surface)
+                    .clickable(onClick = onOpenNowPlaying)
+                    .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("♪", style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(Spacing.md))
+                Column(Modifier.weight(1f)) {
                     Text(
-                        text = if (media.isPlaying) "▶" else "⏸",
+                        text = media.title,
                         style = MaterialTheme.typography.titleMedium,
-                        color = HelmPrimary,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = media.artist,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+                Text(
+                    text = if (media.isPlaying) "▶" else "⏸",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
 
-            AppGrid(
-                apps = vm.grid,
-                onAppClick = { handleLaunch(context, it) },
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(Spacing.md),
-            )
-
             HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
-
-            Hotseat(
-                apps = vm.hotseat,
-                onAppClick = { handleLaunch(context, it) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Spacing.sm),
-            )
         }
+
+        AppGrid(
+            apps = vm.grid,
+            onAppClick = { handleLaunch(context, it) },
+            modifier = Modifier
+                .weight(1f)
+                .padding(Spacing.md),
+        )
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+        Hotseat(
+            apps = vm.hotseat,
+            onAppClick = { handleLaunch(context, it) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(Spacing.sm),
+        )
     }
 }
 

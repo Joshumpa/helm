@@ -1,97 +1,89 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!--
-    Android Studio hardware profile for the AllWinner A133 head unit.
-
-    Import: Device Manager → ⋮ menu → Import Hardware Profiles → select this file.
-    Then create a new AVD using this profile + API 29 (Android 10) system image.
-
-    Specs confirmed from product listing:
-      Screen  : 9.7" QLED, 1024×768 px, portrait mount → 768 w × 1024 h
-      DPI     : 131.96 (~132)
-      SoC     : AllWinner A133 (32-bit armeabi-v7a firmware)
-      RAM     : 4 GB
-      Storage : 64 GB
-      GPS     : built-in
-      Mic     : built-in
--->
-<device xmlns="http://schemas.android.com/sdk/devices/2"
+<devices xmlns="http://schemas.android.com/sdk/devices/3"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <name>Helm Head Unit 9.7"</name>
-    <id>helm-head-unit-97</id>
-    <manufacturer>AllWinner A133</manufacturer>
-    <meta/>
+    <device>
+        <name>Helm Head Unit 9.7"</name>
+        <id>helm-head-unit-97</id>
+        <manufacturer>AllWinner A133</manufacturer>
+        <meta/>
 
-    <hardware>
-        <screen>
-            <screen-size>xlarge</screen-size>
-            <diagonal-length>9.70</diagonal-length>
-            <pixel-density>mdpi</pixel-density>
-            <screen-ratio>notlong</screen-ratio>
-            <dimensions>
-                <!-- Portrait: width < height -->
-                <x-dimension>768</x-dimension>
-                <y-dimension>1024</y-dimension>
-            </dimensions>
-            <xdpi>131.96</xdpi>
-            <ydpi>131.96</ydpi>
-            <touch>
-                <multitouch>jazz-hands</multitouch>
-                <mechanism>finger</mechanism>
-                <screen-type>capacitive</screen-type>
-            </touch>
-        </screen>
+        <hardware>
+            <screen>
+                <screen-size>xlarge</screen-size>
+                <diagonal-length>9.70</diagonal-length>
+                <pixel-density>mdpi</pixel-density>
+                <screen-ratio>notlong</screen-ratio>
+                <dimensions>
+                    <x-dimension>768</x-dimension>
+                    <y-dimension>1024</y-dimension>
+                </dimensions>
+                <xdpi>131.96</xdpi>
+                <ydpi>131.96</ydpi>
+                <touch>
+                    <multitouch>jazz-hands</multitouch>
+                    <mechanism>finger</mechanism>
+                    <screen-type>capacitive</screen-type>
+                </touch>
+            </screen>
 
-        <networking>
-            <wifi>true</wifi>
-            <bluetooth>true</bluetooth>
-            <nfc>false</nfc>
-        </networking>
+            <networking>
+                <wifi>true</wifi>
+                <bluetooth>true</bluetooth>
+                <nfc>false</nfc>
+            </networking>
 
-        <sensors>
-            <accelerometer>false</accelerometer>
-            <barometer>false</barometer>
-            <compass>false</compass>
-            <gps>true</gps>
-            <gyroscope>false</gyroscope>
-            <light-sensor>false</light-sensor>
-            <proximity-sensor>false</proximity-sensor>
-        </sensors>
+            <sensors>
+                <accelerometer>false</accelerometer>
+                <barometer>false</barometer>
+                <compass>false</compass>
+                <gps>true</gps>
+                <gyroscope>false</gyroscope>
+                <light-sensor>false</light-sensor>
+                <proximity-sensor>false</proximity-sensor>
+            </sensors>
 
-        <mic>true</mic>
-        <keyboard>nokeys</keyboard>
-        <nav>nonav</nav>
+            <mic>true</mic>
 
-        <ram unit="GiB">4</ram>
-        <buttons>soft</buttons>
-        <internal-storage unit="GiB">64</internal-storage>
-        <removable-storage unit="GiB">0</removable-storage>
+            <camera>
+                <location>back</location>
+                <autofocus>false</autofocus>
+                <flash>false</flash>
+            </camera>
 
-        <cpu>AllWinner A133</cpu>
-        <gpu>Generic GPU</gpu>
+            <keyboard>nokeys</keyboard>
+            <nav>nonav</nav>
+            <ram unit="GiB">4</ram>
+            <buttons>soft</buttons>
+            <internal-storage unit="GiB">64</internal-storage>
+            <removable-storage unit="GiB">0</removable-storage>
+            <cpu>Generic CPU</cpu>
+            <gpu>Generic GPU</gpu>
 
-        <abi>
-            <abi-type>armeabi-v7a</abi-type>
-        </abi>
+            <abi>
+                <abi-type>armeabi-v7a</abi-type>
+                <abi-type>x86_64</abi-type>
+            </abi>
 
-        <dock/>
-        <power-type>plugged-in</power-type>
-    </hardware>
+            <dock/>
+            <power-type>plugged-in</power-type>
+        </hardware>
 
-    <software>
-        <api-level>29</api-level>
-        <live-wallpaper-support>false</live-wallpaper-support>
-        <bluetooth-profiles/>
-        <gl-version>2.0</gl-version>
-        <gl-extensions/>
-        <status-bar>false</status-bar>
-    </software>
+        <software>
+            <api-level>1-</api-level>
+            <live-wallpaper-support>false</live-wallpaper-support>
+            <bluetooth-profiles/>
+            <gl-version>2.0</gl-version>
+            <gl-extensions/>
+            <status-bar>false</status-bar>
+        </software>
 
-    <state name="Portrait" default="true">
-        <description>Head unit vertical display — always portrait</description>
-        <screen-orientation>port</screen-orientation>
-        <keyboard-state>keysexposed</keyboard-state>
-        <nav-state>navexposed</nav-state>
-    </state>
+        <state name="Portrait" default="true">
+            <description>Head unit vertical display — always portrait</description>
+            <screen-orientation>port</screen-orientation>
+            <keyboard-state>keysexposed</keyboard-state>
+            <nav-state>navexposed</nav-state>
+        </state>
+    </device>
 
-</device>
+</devices>

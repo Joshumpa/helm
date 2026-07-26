@@ -37,8 +37,11 @@ import dev.helm.launcher.LauncherAction
 import dev.helm.launcher.LauncherViewModel
 import dev.helm.launcher.media.NowPlayingViewModel
 import dev.helm.launcher.theme.ThemeViewModel
+import dev.helm.launcher.weather.WeatherViewModel
 import dev.helm.sdk.CarSystem
+import dev.helm.sdk.WeatherDataSource
 import dev.helm.themes.ThemeDefaults
+import dev.helm.widgets.WeatherWidget
 
 private enum class Screen { Home, NowPlaying, Settings }
 
@@ -47,6 +50,7 @@ fun HelmLauncher(
     vm: LauncherViewModel = viewModel(),
     nowPlayingVm: NowPlayingViewModel = viewModel(),
     themeVm: ThemeViewModel = viewModel(),
+    weatherVm: WeatherViewModel = viewModel(),
 ) {
     val variant by themeVm.variant.collectAsState()
     val colorScheme = ThemeDefaults.schemeFor(variant, isSystemInDarkTheme())
@@ -66,6 +70,7 @@ fun HelmLauncher(
                 Screen.Home -> HomeScreen(
                     vm = vm,
                     nowPlayingVm = nowPlayingVm,
+                    weatherSource = weatherVm.source,
                     context = LocalContext.current,
                     onOpenNowPlaying = { screen = Screen.NowPlaying },
                     onOpenSettings = { screen = Screen.Settings },
@@ -79,6 +84,7 @@ fun HelmLauncher(
 private fun HomeScreen(
     vm: LauncherViewModel,
     nowPlayingVm: NowPlayingViewModel,
+    weatherSource: WeatherDataSource,
     context: Context,
     onOpenNowPlaying: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -97,6 +103,8 @@ private fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ClockBar(modifier = Modifier.weight(1f))
+            Spacer(Modifier.width(Spacing.sm))
+            WeatherWidget(source = weatherSource, compact = true)
             Spacer(Modifier.width(Spacing.sm))
             IconButton(onClick = onOpenSettings) {
                 Icon(

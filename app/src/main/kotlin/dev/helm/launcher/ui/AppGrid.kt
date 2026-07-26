@@ -27,7 +27,7 @@ fun AppGrid(
     modifier: Modifier = Modifier,
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(4),
+        columns = GridCells.Fixed(3),
         modifier = modifier,
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),

@@ -10,14 +10,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -27,13 +24,13 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -51,6 +48,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -90,133 +88,165 @@ fun NowPlayingScreen(
 
     val bg = MaterialTheme.colorScheme.background
 
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxSize()
             .background(bg),
     ) {
-        // ── Left column ───────────────────────────────────────────────────────
-        Column(
-            modifier = Modifier
-                .width(300.dp)
-                .fillMaxHeight()
-                .padding(Spacing.lg),
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        // ── Back button ───────────────────────────────────────────────────────
+        IconButton(
+            onClick = onBack,
+            modifier = Modifier.padding(start = Spacing.sm, top = Spacing.sm),
         ) {
-            IconButton(onClick = onBack) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Back",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = "Back",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
+        // ── Album art — 55 % of screen width, square, centered ────────────────
+        Box(
+            modifier = Modifier.fillMaxWidth(),
+            contentAlignment = Alignment.Center,
+        ) {
             AlbumArtImage(
                 bitmap = media.artwork,
                 bg = bg,
-                modifier = Modifier.fillMaxWidth().aspectRatio(1f),
+                modifier = Modifier
+                    .fillMaxWidth(0.55f)
+                    .aspectRatio(1f),
             )
+        }
 
-            Spacer(Modifier.height(Spacing.xs))
+        Spacer(Modifier.height(Spacing.lg))
 
-            Text(
-                text = media.title,
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onBackground,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+        // ── Title + artist ────────────────────────────────────────────────────
+        Text(
+            text = media.title,
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg),
+        )
+        Text(
+            text = media.artist,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg),
+        )
+
+        Spacer(Modifier.height(Spacing.md))
+
+        // ── Progress slider ───────────────────────────────────────────────────
+        if (media.durationMs > 0) {
+            var seeking by remember { mutableStateOf(false) }
+            var seekValue by remember { mutableFloatStateOf(0f) }
+            val sliderValue = if (seeking) seekValue
+                else (positionMs.toFloat() / media.durationMs).coerceIn(0f, 1f)
+
+            Slider(
+                value = sliderValue,
+                onValueChange = { seeking = true; seekValue = it },
+                onValueChangeFinished = {
+                    seeking = false
+                    vm.seekTo((seekValue * media.durationMs).toLong())
+                },
+                colors = SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.lg),
             )
-            Text(
-                text = media.artist,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-
-            if (media.durationMs > 0) {
-                var seeking by remember { mutableStateOf(false) }
-                var seekValue by remember { mutableFloatStateOf(0f) }
-                val sliderValue = if (seeking) seekValue
-                    else (positionMs.toFloat() / media.durationMs).coerceIn(0f, 1f)
-
-                Slider(
-                    value = sliderValue,
-                    onValueChange = { seeking = true; seekValue = it },
-                    onValueChangeFinished = {
-                        seeking = false
-                        vm.seekTo((seekValue * media.durationMs).toLong())
-                    },
-                    colors = SliderDefaults.colors(
-                        thumbColor = MaterialTheme.colorScheme.primary,
-                        activeTrackColor = MaterialTheme.colorScheme.primary,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.xl),
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    formatMs(positionMs),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(formatMs(positionMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Text(formatMs(media.durationMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
+                Text(
+                    formatMs(media.durationMs),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
 
-            // Transport controls — neumorphicClickable replaces ripple with shadow animation
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
+            Spacer(Modifier.height(Spacing.sm))
+        }
+
+        // ── Transport controls ────────────────────────────────────────────────
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .neumorphicClickable(onClick = { vm.skipPrev() }, cornerRadius = 28.dp, elevation = 5.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                // Prev
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .neumorphicClickable(onClick = { vm.skipPrev() }, cornerRadius = 26.dp, elevation = 5.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Filled.SkipPrevious, "Previous", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(28.dp))
-                }
+                Icon(Icons.Filled.SkipPrevious, "Previous", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(30.dp))
+            }
 
-                // Play / Pause — larger, circular, accent border (v2 accessibility)
-                Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .neumorphicClickable(
-                            onClick = { if (media.isPlaying) vm.pause() else vm.play() },
-                            cornerRadius = 32.dp,
-                            elevation = 8.dp,
-                            showAccentBorder = true,
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = if (media.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (media.isPlaying) "Pause" else "Play",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(36.dp),
-                    )
-                }
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .neumorphicClickable(
+                        onClick = { if (media.isPlaying) vm.pause() else vm.play() },
+                        cornerRadius = 36.dp,
+                        elevation = 8.dp,
+                        showAccentBorder = true,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = if (media.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = if (media.isPlaying) "Pause" else "Play",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(40.dp),
+                )
+            }
 
-                // Next
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .neumorphicClickable(onClick = { vm.skipNext() }, cornerRadius = 26.dp, elevation = 5.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Filled.SkipNext, "Next", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(28.dp))
-                }
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .neumorphicClickable(onClick = { vm.skipNext() }, cornerRadius = 28.dp, elevation = 5.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.SkipNext, "Next", tint = MaterialTheme.colorScheme.onBackground, modifier = Modifier.size(30.dp))
             }
         }
 
-        VerticalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+        Spacer(Modifier.height(Spacing.md))
 
-        // ── Right column: lyrics ─────────────────────────────────────────────
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+        // ── Lyrics — remaining vertical space ─────────────────────────────────
         LyricsView(
             lyrics = lyrics,
             positionMs = positionMs,
-            modifier = Modifier.weight(1f).fillMaxHeight(),
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
         )
     }
 }
@@ -231,7 +261,6 @@ private fun AlbumArtImage(bitmap: Bitmap?, bg: Color, modifier: Modifier = Modif
             modifier = modifier.clip(RoundedCornerShape(20.dp)),
         )
     } else {
-        // Static card — no interaction, use neumorphicShadow directly
         Box(
             modifier = modifier
                 .neumorphicShadow(backgroundColor = bg, cornerRadius = 20.dp, elevation = 8.dp)
@@ -263,6 +292,8 @@ private fun NoMediaPlaceholder(onBack: () -> Unit, onOpenSettings: () -> Unit) {
                 "Grant notification access so Helm can read media sessions",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = Spacing.xl),
             )
             Button(
                 onClick = onOpenSettings,

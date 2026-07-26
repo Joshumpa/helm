@@ -1,6 +1,5 @@
 package dev.helm.launcher.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.helm.core.Spacing
+import dev.helm.core.neumorphicClickable
 import dev.helm.launcher.AppEntry
 
 @Composable
@@ -29,8 +29,8 @@ fun AppGrid(
     LazyVerticalGrid(
         columns = GridCells.Fixed(4),
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         items(apps) { entry ->
             GridCell(entry = entry, onClick = { onAppClick(entry) })
@@ -43,7 +43,7 @@ private fun GridCell(entry: AppEntry, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .neumorphicClickable(onClick = onClick, cornerRadius = 16.dp, elevation = 6.dp)
             .padding(Spacing.sm),
     ) {
         AppIconImage(

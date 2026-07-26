@@ -3,9 +3,7 @@ package dev.helm.launcher.ui
 import android.content.Context
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -28,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.helm.core.Spacing
+import dev.helm.core.neumorphicClickable
 import dev.helm.core.theme.HelmTheme
 import dev.helm.launcher.AppEntry
 import dev.helm.launcher.LauncherAction
@@ -44,8 +43,7 @@ fun HelmLauncher(
     themeVm: ThemeViewModel = viewModel(),
 ) {
     val variant by themeVm.variant.collectAsState()
-    val isDark = isSystemInDarkTheme()
-    val colorScheme = ThemeDefaults.schemeFor(variant, isDark)
+    val colorScheme = ThemeDefaults.schemeFor(variant, isSystemInDarkTheme())
     var showNowPlaying by remember { mutableStateOf(false) }
 
     HelmTheme(colorScheme = colorScheme) {
@@ -86,12 +84,17 @@ private fun HomeScreen(
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
+        // Mini player — neumorphic card, animated on press
         if (media.title.isNotEmpty()) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clickable(onClick = onOpenNowPlaying)
+                    .padding(horizontal = Spacing.md, vertical = Spacing.xs)
+                    .neumorphicClickable(
+                        onClick = onOpenNowPlaying,
+                        cornerRadius = Spacing.md,
+                        elevation = Spacing.sm,
+                    )
                     .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -119,8 +122,6 @@ private fun HomeScreen(
                     color = MaterialTheme.colorScheme.primary,
                 )
             }
-
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
         }
 
         AppGrid(
@@ -128,7 +129,7 @@ private fun HomeScreen(
             onAppClick = { handleLaunch(context, it) },
             modifier = Modifier
                 .weight(1f)
-                .padding(Spacing.md),
+                .padding(horizontal = Spacing.md, vertical = Spacing.sm),
         )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))

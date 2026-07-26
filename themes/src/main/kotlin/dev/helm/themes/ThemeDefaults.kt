@@ -6,34 +6,36 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
 
 // ── Helm (default) ───────────────────────────────────────────────────────────
-// Pure black base, cobalt-blue accent — the original Helm design language.
+// Deep navy base — neumorphic design language. Non-black so shadows can appear
+// both lighter and darker than the surface to create the extruded depth effect.
 
 private val HelmDark = darkColorScheme(
-    background = Color(0xFF000000),
-    surface = Color(0xFF1C1C1E),
-    surfaceVariant = Color(0xFF2C2C2E),
-    onSurfaceVariant = Color(0xFF8E8E93),
-    primary = Color(0xFF0A84FF),
-    onPrimary = Color(0xFFFFFFFF),
-    onBackground = Color(0xFFFFFFFF),
-    onSurface = Color(0xFFEBEBF5),
-    error = Color(0xFFFF453A),
-    outline = Color(0xFF38383A),
-    outlineVariant = Color(0xFF2C2C2E),
+    background       = Color(0xFF1A1E2E),
+    surface          = Color(0xFF1D2234),
+    surfaceVariant   = Color(0xFF232940),
+    onSurfaceVariant = Color(0xFF8E93AA),
+    primary          = Color(0xFF4F9EFF),
+    onPrimary        = Color(0xFFFFFFFF),
+    onBackground     = Color(0xFFE8EBF5),
+    onSurface        = Color(0xFFCDD3EF),
+    error            = Color(0xFFFF453A),
+    outline          = Color(0xFF2E3450),
+    outlineVariant   = Color(0xFF232940),
 )
 
+// Light counterpart — slightly warm gray so neumorphic shadows work equally well.
 private val HelmLight = lightColorScheme(
-    background = Color(0xFFF2F2F7),
-    surface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFFE5E5EA),
-    onSurfaceVariant = Color(0xFF6C6C70),
-    primary = Color(0xFF007AFF),
-    onPrimary = Color(0xFFFFFFFF),
-    onBackground = Color(0xFF000000),
-    onSurface = Color(0xFF1C1C1E),
-    error = Color(0xFFFF3B30),
-    outline = Color(0xFFC6C6C8),
-    outlineVariant = Color(0xFFE5E5EA),
+    background       = Color(0xFFE8EAF2),
+    surface          = Color(0xFFEEF0F8),
+    surfaceVariant   = Color(0xFFF4F5FC),
+    onSurfaceVariant = Color(0xFF5A5F78),
+    primary          = Color(0xFF0057CC),
+    onPrimary        = Color(0xFFFFFFFF),
+    onBackground     = Color(0xFF1A1E2E),
+    onSurface        = Color(0xFF1D2234),
+    error            = Color(0xFFFF3B30),
+    outline          = Color(0xFFC8CBDE),
+    outlineVariant   = Color(0xFFDFE1EF),
 )
 
 // ── Tesla ────────────────────────────────────────────────────────────────────

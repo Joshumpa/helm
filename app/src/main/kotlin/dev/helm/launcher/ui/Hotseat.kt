@@ -1,6 +1,5 @@
 package dev.helm.launcher.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.helm.core.Spacing
+import dev.helm.core.neumorphicClickable
 import dev.helm.launcher.AppEntry
 
 @Composable
@@ -40,7 +40,7 @@ private fun HotseatButton(entry: AppEntry, onClick: () -> Unit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
-            .clickable(onClick = onClick)
+            .neumorphicClickable(onClick = onClick, cornerRadius = 20.dp, elevation = 6.dp)
             .padding(horizontal = Spacing.md, vertical = Spacing.sm),
     ) {
         AppIconImage(

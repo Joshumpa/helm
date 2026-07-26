@@ -6,16 +6,16 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
 val HelmColorScheme: ColorScheme = darkColorScheme(
-    background = HelmBackground,
-    surface = HelmSurface,
+    background     = HelmBackground,
+    surface        = HelmSurface,
     surfaceVariant = HelmSurfaceVariant,
     onSurfaceVariant = HelmSubtext,
-    primary = HelmPrimary,
-    onPrimary = HelmOnPrimary,
-    onBackground = HelmOnBackground,
-    onSurface = HelmOnSurface,
-    error = HelmError,
-    outline = HelmDivider,
+    primary        = HelmPrimary,
+    onPrimary      = HelmOnPrimary,
+    onBackground   = HelmOnBackground,
+    onSurface      = HelmOnSurface,
+    error          = HelmError,
+    outline        = HelmDivider,
     outlineVariant = HelmSurfaceVariant,
 )
 
@@ -26,7 +26,8 @@ fun HelmTheme(
 ) {
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = HelmTypography,
-        content = content,
+        typography  = HelmTypography,
+        shapes      = HelmShapes,
+        content     = content,
     )
 }

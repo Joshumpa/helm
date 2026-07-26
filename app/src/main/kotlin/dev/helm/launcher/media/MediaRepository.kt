@@ -10,6 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+// METADATA_KEY_LYRICS is @hide in android.media.MediaMetadata — use the raw key string instead.
+private const val METADATA_KEY_LYRICS = "android.media.metadata.LYRICS"
+
 class MediaRepository(private val context: Context) {
 
     private val _state = MutableStateFlow(NowPlayingState())
@@ -50,7 +53,7 @@ class MediaRepository(private val context: Context) {
             durationMs      = meta?.getLong(MediaMetadata.METADATA_KEY_DURATION) ?: 0L,
             positionMs      = pb?.position ?: 0L,
             isPlaying       = pb?.state == PlaybackState.STATE_PLAYING,
-            metadataLyrics  = meta?.getString(MediaMetadata.METADATA_KEY_LYRICS),
+            metadataLyrics  = meta?.getString(METADATA_KEY_LYRICS),
         )
     }
 }

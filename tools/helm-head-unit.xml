@@ -1,89 +1,81 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<devices xmlns="http://schemas.android.com/sdk/devices/3"
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<d:devices xmlns:d="http://schemas.android.com/sdk/devices/10"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 
-    <device>
-        <name>Helm Head Unit 9.7"</name>
-        <id>helm-head-unit-97</id>
-        <manufacturer>AllWinner A133</manufacturer>
-        <meta/>
+  <d:device>
+    <d:name>Helm Head Unit 9.7"</d:name>
+    <d:manufacturer>AllWinner A133</d:manufacturer>
+    <d:meta/>
 
-        <hardware>
-            <screen>
-                <screen-size>xlarge</screen-size>
-                <diagonal-length>9.70</diagonal-length>
-                <pixel-density>mdpi</pixel-density>
-                <screen-ratio>notlong</screen-ratio>
-                <dimensions>
-                    <x-dimension>768</x-dimension>
-                    <y-dimension>1024</y-dimension>
-                </dimensions>
-                <xdpi>131.96</xdpi>
-                <ydpi>131.96</ydpi>
-                <touch>
-                    <multitouch>jazz-hands</multitouch>
-                    <mechanism>finger</mechanism>
-                    <screen-type>capacitive</screen-type>
-                </touch>
-            </screen>
+    <d:hardware>
+      <d:screen>
+        <d:screen-size>xlarge</d:screen-size>
+        <d:diagonal-length>9.70</d:diagonal-length>
+        <d:pixel-density>mdpi</d:pixel-density>
+        <d:screen-ratio>notlong</d:screen-ratio>
+        <d:dimensions>
+          <d:x-dimension>768</d:x-dimension>
+          <d:y-dimension>1024</d:y-dimension>
+        </d:dimensions>
+        <d:xdpi>131.96</d:xdpi>
+        <d:ydpi>131.96</d:ydpi>
+        <d:touch>
+          <d:multitouch>jazz-hands</d:multitouch>
+          <d:mechanism>finger</d:mechanism>
+          <d:screen-type>capacitive</d:screen-type>
+        </d:touch>
+      </d:screen>
 
-            <networking>
-                <wifi>true</wifi>
-                <bluetooth>true</bluetooth>
-                <nfc>false</nfc>
-            </networking>
+      <d:networking>
+Bluetooth
+Wifi</d:networking>
 
-            <sensors>
-                <accelerometer>false</accelerometer>
-                <barometer>false</barometer>
-                <compass>false</compass>
-                <gps>true</gps>
-                <gyroscope>false</gyroscope>
-                <light-sensor>false</light-sensor>
-                <proximity-sensor>false</proximity-sensor>
-            </sensors>
+      <d:sensors>
+GPS</d:sensors>
 
-            <mic>true</mic>
+      <d:mic>true</d:mic>
 
-            <camera>
-                <location>back</location>
-                <autofocus>false</autofocus>
-                <flash>false</flash>
-            </camera>
+      <d:camera>
+        <d:location>back</d:location>
+        <d:autofocus>false</d:autofocus>
+        <d:flash>false</d:flash>
+      </d:camera>
 
-            <keyboard>nokeys</keyboard>
-            <nav>nonav</nav>
-            <ram unit="GiB">4</ram>
-            <buttons>soft</buttons>
-            <internal-storage unit="GiB">64</internal-storage>
-            <removable-storage unit="GiB">0</removable-storage>
-            <cpu>Generic CPU</cpu>
-            <gpu>Generic GPU</gpu>
+      <d:keyboard>nokeys</d:keyboard>
+      <d:nav>nonav</d:nav>
+      <d:ram unit="GiB">4</d:ram>
+      <d:buttons>soft</d:buttons>
+      <d:internal-storage unit="GiB">64</d:internal-storage>
+      <d:removable-storage unit="GiB">0</d:removable-storage>
+      <d:cpu>Generic CPU</d:cpu>
+      <d:gpu>Generic GPU</d:gpu>
 
-            <abi>
-                <abi-type>armeabi-v7a</abi-type>
-                <abi-type>x86_64</abi-type>
-            </abi>
+      <d:abi>armeabi-v7a</d:abi>
+      <d:abis>armeabi-v7a</d:abis>
+      <d:abis>x86_64</d:abis>
 
-            <dock/>
-            <power-type>plugged-in</power-type>
-        </hardware>
+      <d:dock/>
+      <d:power-type>plugged-in</d:power-type>
+      <d:skin>_no_skin</d:skin>
+    </d:hardware>
 
-        <software>
-            <api-level>1-</api-level>
-            <live-wallpaper-support>false</live-wallpaper-support>
-            <bluetooth-profiles/>
-            <gl-version>2.0</gl-version>
-            <gl-extensions/>
-            <status-bar>false</status-bar>
-        </software>
+    <d:software>
+      <d:api-level>-</d:api-level>
+      <d:live-wallpaper-support>false</d:live-wallpaper-support>
+      <d:bluetooth-profiles/>
+      <d:gl-version>2.0</d:gl-version>
+      <d:gl-extensions/>
+      <d:status-bar>false</d:status-bar>
+    </d:software>
 
-        <state name="Portrait" default="true">
-            <description>Head unit vertical display — always portrait</description>
-            <screen-orientation>port</screen-orientation>
-            <keyboard-state>keysexposed</keyboard-state>
-            <nav-state>navexposed</nav-state>
-        </state>
-    </device>
+    <d:state default="true" name="Portrait">
+      <d:description>Head unit vertical display — always portrait</d:description>
+      <d:screen-orientation>port</d:screen-orientation>
+      <d:keyboard-state>keyssoft</d:keyboard-state>
+      <d:nav-state>navhidden</d:nav-state>
+    </d:state>
 
-</devices>
+    <d:tag-id>android-automotive</d:tag-id>
+  </d:device>
+
+</d:devices>

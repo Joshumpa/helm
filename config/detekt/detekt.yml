@@ -4,8 +4,11 @@ complexity:
   LongParameterList:
     functionThreshold: 10 # Compose functions often have many params
     constructorThreshold: 8
+  CyclomaticComplexMethod:
+    threshold: 20         # handleLaunch when-expression covers all 14 LauncherAction branches
   TooManyFunctions:
     thresholdInClasses: 20
+    thresholdInObjects: 20  # CarSystem object has 16 public functions (one per OEM app)
     thresholdInFiles: 20
 
 naming:

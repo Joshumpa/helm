@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -70,10 +71,11 @@ fun NowPlayingScreen(
 
     var positionMs by remember { mutableLongStateOf(0L) }
     LaunchedEffect(media.isPlaying) {
-        while (true) {
+        while (media.isPlaying) {
             positionMs = vm.livePositionMs()
             delay(500)
         }
+        positionMs = vm.livePositionMs()
     }
 
     if (media.title.isEmpty()) {
@@ -91,7 +93,8 @@ fun NowPlayingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(bg),
+            .background(bg)
+            .systemBarsPadding(),
     ) {
         // ── Back button ───────────────────────────────────────────────────────
         IconButton(

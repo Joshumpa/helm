@@ -2,7 +2,9 @@ package dev.helm.launcher.ui
 
 import android.content.Context
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -10,10 +12,18 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
@@ -23,11 +33,13 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -49,7 +61,7 @@ import dev.helm.sdk.WeatherDataSource
 import dev.helm.themes.ThemeDefaults
 import dev.helm.widgets.WeatherWidget
 
-private enum class Screen { Home, NowPlaying, Settings }
+private enum class Screen { Splash, Home, NowPlaying, Settings }
 
 @Composable
 fun HelmLauncher(
@@ -61,11 +73,53 @@ fun HelmLauncher(
 ) {
     val variant by themeVm.variant.collectAsState()
     val colorScheme = ThemeDefaults.schemeFor(variant, isSystemInDarkTheme())
-    var screen by remember { mutableStateOf(Screen.Home) }
+    var screen by remember { mutableStateOf(Screen.Splash) }
+
+    LaunchedEffect(Unit) {
+        delay(1_600L)
+        screen = Screen.Home
+    }
 
     HelmTheme(colorScheme = colorScheme) {
-        AnimatedContent(targetState = screen, label = "screen") { current ->
+        AnimatedContent(
+            targetState = screen,
+            transitionSpec = {
+                when {
+                    initialState == Screen.Home && targetState == Screen.NowPlaying ->
+                        (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { it } +
+                            fadeIn(tween(300))) togetherWith
+                        (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } +
+                            fadeOut(tween(200)))
+
+                    initialState == Screen.NowPlaying && targetState == Screen.Home ->
+                        (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } +
+                            fadeIn(tween(300))) togetherWith
+                        (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { it } +
+                            fadeOut(tween(200)))
+
+                    initialState == Screen.Home && targetState == Screen.Settings ->
+                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } +
+                            fadeIn(tween(300))) togetherWith
+                        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } +
+                            fadeOut(tween(200)))
+
+                    initialState == Screen.Settings && targetState == Screen.Home ->
+                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } +
+                            fadeIn(tween(300))) togetherWith
+                        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } +
+                            fadeOut(tween(200)))
+
+                    initialState == Screen.Splash && targetState == Screen.Home ->
+                        fadeIn(tween(600)) togetherWith fadeOut(tween(400))
+
+                    else ->
+                        fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+                }
+            },
+            label = "screen",
+        ) { current ->
             when (current) {
+                Screen.Splash -> SplashScreen()
                 Screen.NowPlaying -> NowPlayingScreen(
                     onBack = { screen = Screen.Home },
                     vm = nowPlayingVm,
@@ -104,7 +158,8 @@ private fun HomeScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.background)
+            .systemBarsPadding(),
     ) {
         Row(
             modifier = Modifier
@@ -190,20 +245,40 @@ private fun HomeScreen(
 
 @Composable
 private fun SpeedBadge(speedKmh: Int, modifier: Modifier = Modifier) {
+    val bgColor by animateColorAsState(
+        targetValue = when {
+            speedKmh >= 90 -> MaterialTheme.colorScheme.error.copy(alpha = 0.18f)
+            speedKmh >= 50 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+            else           -> MaterialTheme.colorScheme.surfaceVariant
+        },
+        animationSpec = tween(400),
+        label = "speed_bg",
+    )
+    val numColor by animateColorAsState(
+        targetValue = when {
+            speedKmh >= 90 -> MaterialTheme.colorScheme.error
+            speedKmh >= 50 -> MaterialTheme.colorScheme.primary
+            else           -> MaterialTheme.colorScheme.onBackground
+        },
+        animationSpec = tween(400),
+        label = "speed_num",
+    )
+
     Row(
-        modifier = modifier,
-        verticalAlignment = Alignment.Bottom,
+        modifier = modifier
+            .background(bgColor, RoundedCornerShape(20.dp))
+            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = "$speedKmh",
             style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = numColor,
         )
         Text(
             text = " km/h",
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 2.dp),
+            color = numColor.copy(alpha = 0.65f),
         )
     }
 }

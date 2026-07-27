@@ -16,8 +16,20 @@ class HelmNotificationListener : NotificationListenerService() {
         val mediaToken: StateFlow<MediaSession.Token?> = _mediaToken.asStateFlow()
     }
 
+    override fun onListenerConnected() {
+        activeNotifications?.forEach { sbn -> extractToken(sbn)?.let { _mediaToken.value = it } }
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        val token: MediaSession.Token? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        extractToken(sbn)?.let { _mediaToken.value = it }
+    }
+
+    override fun onNotificationRemoved(sbn: StatusBarNotification) {
+        if (extractToken(sbn) != null) _mediaToken.value = null
+    }
+
+    private fun extractToken(sbn: StatusBarNotification): MediaSession.Token? =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             sbn.notification.extras.getParcelable(
                 Notification.EXTRA_MEDIA_SESSION, MediaSession.Token::class.java
             )
@@ -25,6 +37,4 @@ class HelmNotificationListener : NotificationListenerService() {
             @Suppress("DEPRECATION")
             sbn.notification.extras.getParcelable(Notification.EXTRA_MEDIA_SESSION)
         }
-        if (token != null) _mediaToken.value = token
-    }
 }

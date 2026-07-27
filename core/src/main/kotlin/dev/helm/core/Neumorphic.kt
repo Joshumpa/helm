@@ -18,6 +18,7 @@ import androidx.compose.foundation.background
 import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.graphics.Color
@@ -67,17 +68,28 @@ fun Modifier.neumorphicClickable(
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
-    // depth > 0 → extruded  |  depth < 0 → inset  |  0 → flat
+    // Shadow: no bounce — crisp press response, no oscillation
     val depth by animateFloatAsState(
-        targetValue = if (isPressed) -(elevation.value * 0.40f) else elevation.value,
+        targetValue = if (isPressed) -(elevation.value * 0.55f) else elevation.value,
         animationSpec = spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness    = Spring.StiffnessMediumLow,
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness    = Spring.StiffnessHigh,
         ),
         label = "neomorph_depth",
     )
 
-    neumorphicDepth(backgroundColor = bg, cornerRadius = cornerRadius, depth = depth)
+    // Scale: slight bounce only on release — physical "pop back" feel
+    val pressScale by animateFloatAsState(
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness    = Spring.StiffnessMedium,
+        ),
+        label = "neomorph_scale",
+    )
+
+    scale(pressScale)
+        .neumorphicDepth(backgroundColor = bg, cornerRadius = cornerRadius, depth = depth)
         .background(bg, RoundedCornerShape(cornerRadius))
         .then(
             if (showAccentBorder)

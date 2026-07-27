@@ -37,17 +37,21 @@ Understand the platform completely before writing any production code:
 - Permission list Dofun holds that Helm will need
 - Answer to each open question listed at the bottom of this file
 
-### Phase 2 — Infrastructure (in progress)
+### Phase 2 — Infrastructure (complete)
 Build the foundation:
 - ✅ Helm SDK with OEM abstraction layer (`sdk/` module — CarSystem, AdasEvent, McuDataSource interface)
 - ✅ Launcher skeleton with multi-module Gradle structure (11 modules, minSdk 29, armeabi-v7a)
-- ⬜ CI/CD pipeline
+- ✅ CI/CD pipeline (GitHub Actions — lint + assembleDebug + Detekt + JUnit 5)
 
-### Phase 3 — User Experience
+### Phase 3 — User Experience (in progress)
 Build the interface:
-- Automotive-grade UI with Jetpack Compose
-- Widget engine and theme system
-- Animations and transitions
+- ✅ Theme system (`:themes` module — 4 variants: Helm/Tesla/AndroidAuto/CarPlay, DataStore persistence, settings UI)
+- ✅ Screen transition animations (directional slide: NowPlaying slides vertical, Settings slides horizontal)
+- ✅ Boot screen (splash con wordmark animado, fade-in 700ms, auto-dismiss 1.6s → fade a Home)
+- ✅ Speed badge pill (color animado: neutral < 50 km/h, primary 50–89, error ≥ 90)
+- ✅ Button press animation — NoBouncy+StiffnessHigh shadow, MediumBouncy scale 0.96f pop-back
+- ✅ Icon launch animation (Animatable 1.0→0.78→pop back en AppGrid y Hotseat, solo al ícono)
+- ⬜ Stub modules wired up (`:audio`, `:radio`, `:bluetooth`, `:settings`, `:carplay`, `:navigation`)
 
 ---
 

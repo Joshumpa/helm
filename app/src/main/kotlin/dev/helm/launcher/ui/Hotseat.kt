@@ -72,6 +72,7 @@ private fun HotseatButton(entry: AppEntry, onClick: () -> Unit) {
         AppIconImage(
             pkg = entry.pkg,
             label = entry.label,
+            action = entry.action,
             modifier = Modifier
                 .size(48.dp)
                 .scale(iconScale.value),

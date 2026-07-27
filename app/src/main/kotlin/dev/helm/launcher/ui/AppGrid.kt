@@ -75,6 +75,7 @@ private fun GridCell(entry: AppEntry, onClick: () -> Unit) {
         AppIconImage(
             pkg = entry.pkg,
             label = entry.label,
+            action = entry.action,
             modifier = Modifier
                 .size(56.dp)
                 .scale(iconScale.value),

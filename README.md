@@ -1,22 +1,20 @@
-# Helm
+<div align="center">
 
-> An open platform for Android car head units.
+![](.github/assets/helm-banner.svg)
 
-Helm is not a launcher mod or a theme — it is a complete software platform designed
-to replace the stock OEM experience on Android-based car screens with a modern,
-modular, and fully customizable system built from the ground up.
+[![CI](https://github.com/Joshumpa/helm/actions/workflows/ci.yml/badge.svg)](https://github.com/Joshumpa/helm/actions/workflows/ci.yml)
+![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
+![Android API](https://img.shields.io/badge/Android-10%2B-3DDC84.svg?style=flat-square)
+![Language](https://img.shields.io/badge/Kotlin-100%25-7F52FF.svg?style=flat-square)
+![Status](https://img.shields.io/badge/status-Phase%202-orange.svg?style=flat-square)
+
+</div>
 
 ---
 
-## Why Helm?
+**Helm is a complete software platform that replaces the stock OEM experience on Android car head units.** Not a theme. Not a launcher mod. A full replacement — built from scratch, with its own SDK, widget engine, and theme system.
 
-Most Android car head units ship with locked-down OEM software that is slow, hard to
-customize, and impossible to extend. Helm takes a different approach: instead of
-patching what the manufacturer gave you, Helm replaces it entirely.
-
-The platform is built around one principle — the launcher never talks directly to OEM
-services. Every hardware interaction goes through the Helm SDK, which keeps the rest
-of the system clean and portable across different head units.
+The hardware shipping inside most aftermarket Android screens is actually capable. The software holding it back is not. Helm fixes that.
 
 ---
 
@@ -43,15 +41,11 @@ Android 10 (API 29)
                 └── :sdk        OEM abstraction, MCU data pipeline
 ```
 
-Each module has a defined contract: it exposes an interface to `:app` and declares
-the interfaces it needs from other modules. No module imports concrete classes from
-another — dependencies flow through the SDK or are injected by `:app`.
+The SDK is the critical piece. Every hardware interaction — MCU events, OEM Intents, serial frames — goes through it. The launcher never calls OEM APIs directly. Swapping support for a different head unit means updating `:sdk` only; everything else stays untouched.
 
 ---
 
 ## SDK
-
-The SDK abstracts three layers of hardware communication:
 
 **High-level surface** — what the launcher calls:
 
@@ -86,7 +80,7 @@ interface McuEventListener {
 }
 ```
 
-**Public AIDL service** — what third-party apps and widgets can bind to:
+**Public AIDL service** — what third-party apps and widgets bind to:
 
 ```kotlin
 interface IHelmSdkService {
@@ -104,72 +98,106 @@ interface IHelmSdkService {
 ## Features
 
 ### Launcher
-- Replaces OEM launcher as the default home app (dynamically toggleable)
-- Horizontal app grid — 2 rows, 4 columns always visible, scrollable
-- Pinned app shortcuts with drag-to-reorder
-- Debounced touch input — designed for gloves and road vibration
+- Replaces the OEM launcher as the default home app — dynamically toggleable
+- Horizontal app grid: 2 rows × 4 columns always visible, scrollable
+- Pinned shortcuts with drag-to-reorder
+- Debounced touch input designed for gloves and road vibration
 
 ### Widget Engine
-- Configurable grid layout with drag-and-drop repositioning
+- Configurable drag-and-drop grid
 - Widgets: clock, vehicle speed, now playing, weather, ADAS alerts, compass, A/C status
-- Per-sensor reactive data streams — independent polling rates per data source
+- Per-sensor reactive streams with independent polling rates
 - Live album art, playback controls, Bluetooth metadata
 
 ### Theme System
 - Day / Night / Auto (solar calculation) / System modes
-- Accent, background, and font colors — user configurable
-- Frosted-glass card aesthetic — works on any wallpaper
+- Accent, background, and font colors — fully user configurable
+- Frosted-glass card aesthetic that works on any wallpaper
 - UI scale override without affecting font sizes
 
 ### MCU Integration
 - Vehicle speed, RPM, gear, handbrake, seat belt, turn signals
 - A/C state: temperature zones, fan speed, airflow mode
 - Steering wheel media buttons, voice button, phone controls
-- Parking radar distances (front and rear)
+- Parking radar distances (front and rear, 8 sensors)
 - ADAS events: lane departure, forward collision, stop/go
 
 ### Radio
-- FM/AM tuner with hardware MCU backend
-- MediaSession fallback — works on any vendor unit without root
-- Frequency parsing from media metadata
+- FM/AM tuner with hardware MCU backend (QN8035 IC)
+- MediaSession fallback — works without root on any vendor unit
 - Per-band presets with long-press to save
+
+---
+
+## How Helm Talks to the Car
+
+Most Android car head units share a common pattern: a microcontroller (MCU) manages
+all the physical inputs — steering wheel buttons, gear sensor, A/C controls, door
+contacts, parking radar — and communicates with Android over a serial UART bus.
+
+On AllWinner A133 firmware, the full chain looks like this:
+
+```
+MCU (hardware)
+  ──serial──▶ libtwutil2.so  (native JNI, PID 1941)
+                  │  android.tw.john.TWUtil
+       ┌──────────┴─────────────────────┐
+       ▼                                ▼
+  com.tw.service                   privileged apps
+  (system events:                  (vehicle data: speed,
+  volume, night mode,              AC, ADAS — via TWUtil
+  source switch)                   directly)
+```
+
+`android.tw.john.TWUtil` is a hidden platform class provided by AllWinner. It exposes
+30 typed event codes — reverse gear, door state, parking radar, ambient temperature,
+climate control, steering buttons, screen rotation, power-off countdown, and more.
+
+The UART frame format is simple:
+
+```
+0xF2  dataType  cmdType  payloadLen  [payload...]  checksum
+```
+
+Helm subscribes to these codes directly (with system UID) and maps each one to a
+typed Kotlin event in `McuEventListener`. No polling. No OEM middleware.
 
 ---
 
 ## Target Hardware
 
-Helm is developed on the following reference hardware:
+Helm is developed on the following reference unit:
 
-| Component | Details |
-|-----------|---------|
-| SoC | AllWinner A133 |
-| Android | 10 (API 29) |
-| CPU mode | 32-bit (armeabi-v7a) |
-| RAM | 4 GB |
-| Storage | 64 GB |
-| Bluetooth | 5.4 |
-| Audio IC | PT2313 |
-| Radio IC | QN8035 |
-| MCU | T13.1.1 |
+| Component  | Details |
+|------------|---------|
+| SoC        | AllWinner A133 |
+| Android    | 10 (API 29) |
+| CPU mode   | 32-bit (armeabi-v7a) |
+| RAM        | 4 GB |
+| Storage    | 64 GB |
+| Bluetooth  | 5.4 |
+| Audio IC   | PT2313 |
+| Radio IC   | QN8035 |
+| MCU        | T13.1.1 |
+| SELinux    | Permissive |
 
-The SDK layer is designed to be portable. Swapping support for a different head unit
-means updating `:sdk` only — the rest of the codebase is hardware-agnostic.
+The architecture is designed to be portable. A different SoC or OEM means updating `:sdk` only.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Language | Kotlin |
-| UI | Jetpack Compose + Material 3 |
+| Layer        | Technology |
+|--------------|-----------|
+| Language     | Kotlin |
+| UI           | Jetpack Compose + Material 3 |
 | Architecture | MVVM + Clean Architecture per module |
-| Build | Gradle multi-module |
-| Persistence | DataStore (preferences) + Room (app list) |
-| Async | Coroutines + StateFlow |
-| DI | Hilt |
-| Min SDK | Android 10 (API 29) |
-| ABI | armeabi-v7a |
+| Build        | Gradle multi-module |
+| Persistence  | DataStore + Room |
+| Async        | Coroutines + StateFlow |
+| DI           | Hilt |
+| Min SDK      | Android 10 (API 29) |
+| ABI          | armeabi-v7a (release) |
 
 ---
 
@@ -184,21 +212,21 @@ means updating `:sdk` only — the rest of the codebase is hardware-agnostic.
 
 ### Development Phases
 
-**Phase 1 — Reverse Engineering** ✅
-Platform fully mapped: system APKs, AIDL interfaces, MCU communication protocol,
-CarPlay entry points, permissions required.
+**Phase 1 — Reverse Engineering** ✅  
+Platform fully mapped: system APKs, AIDL interfaces, MCU protocol (30 event codes
+decoded), CarPlay entry points, all required permissions.
 
-**Phase 2 — Infrastructure** 🚧
+**Phase 2 — Infrastructure** 🚧  
 Gradle multi-module scaffold, Helm SDK interfaces, CI/CD pipeline.
 
-**Phase 3 — User Experience** ⬜
+**Phase 3 — User Experience** ⬜  
 Automotive-grade Compose UI, widget engine, theme system, animations.
 
 ---
 
 ## Philosophy
 
-> Instead of asking "how do we modify what the manufacturer gave us?"
+> Instead of asking "how do we modify what the manufacturer gave us?"  
 > we ask "how do we make the manufacturer irrelevant?"
 
 ---
@@ -206,21 +234,3 @@ Automotive-grade Compose UI, widget engine, theme system, animations.
 ## License
 
 MIT — see [LICENSE](LICENSE).
-
----
-
-## Español
-
-**Helm** es una plataforma de software de código abierto para pantallas Android de
-automóvil. El objetivo es reemplazar la experiencia del fabricante (OEM) por una
-interfaz moderna, modular y completamente construida desde cero.
-
-El proyecto está organizado en módulos independientes: `:core`, `:widgets`, `:themes`,
-`:audio`, `:navigation`, `:bluetooth`, `:carplay`, `:radio`, `:settings` y `:sdk`.
-El SDK abstrae toda la comunicación con el hardware — la pantalla MCU, el UART de
-serie, las señales del vehículo y los servicios OEM — de modo que el launcher nunca
-depende de implementaciones específicas del fabricante.
-
-El hardware de referencia es AllWinner A133 con Android 10 (API 29, armeabi-v7a),
-pero la arquitectura está diseñada para ser portable a otros SoCs de pantallas de auto
-cambiando únicamente el módulo `:sdk`.

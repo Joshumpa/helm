@@ -23,11 +23,17 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build debug APK
-        run: ./gradlew assembleDebug --parallel
+      - name: Run Detekt
+        run: ./gradlew detekt
+
+      - name: Run unit tests
+        run: ./gradlew test --parallel
 
       - name: Run lint
         run: ./gradlew lintDebug --parallel
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --parallel
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

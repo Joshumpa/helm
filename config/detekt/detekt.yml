@@ -1,0 +1,25 @@
+complexity:
+  LongMethod:
+    threshold: 80         # Compose UIs are naturally verbose
+  LongParameterList:
+    functionThreshold: 10 # Compose functions often have many params
+    constructorThreshold: 8
+  TooManyFunctions:
+    thresholdInClasses: 20
+    thresholdInFiles: 20
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated:
+      - 'Composable'      # PascalCase is correct for @Composable functions
+
+style:
+  MagicNumber:
+    active: false         # too noisy for Compose layout/color code
+  ReturnCount:
+    max: 4
+  UnusedPrivateMember:
+    active: true
+
+formatting:
+  active: false           # handled by the IDE, not needed in CI

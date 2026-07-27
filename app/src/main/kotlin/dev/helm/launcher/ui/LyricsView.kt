@@ -9,14 +9,18 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import dev.helm.core.Spacing
@@ -82,17 +86,26 @@ private fun SyncedLyricsView(lines: List<LrcLine>, positionMs: Long) {
     ) {
         itemsIndexed(lines, key = { i, _ -> i }) { index, line ->
             val current = index == currentIndex
+            val alpha by animateFloatAsState(
+                targetValue = if (current) 1f else 0.25f,
+                animationSpec = tween(300),
+                label = "lyric_alpha",
+            )
+            val lineScale by animateFloatAsState(
+                targetValue = if (current) 1.18f else 1f,
+                animationSpec = tween(300),
+                label = "lyric_scale",
+            )
             Text(
                 text = line.text,
-                style = if (current) MaterialTheme.typography.titleMedium
-                        else MaterialTheme.typography.bodyMedium,
-                color = if (current) MaterialTheme.colorScheme.onBackground
-                        else MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = alpha),
                 fontWeight = if (current) FontWeight.Bold else FontWeight.Normal,
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = Spacing.xs),
+                    .padding(vertical = Spacing.sm)
+                    .scale(lineScale),
             )
         }
     }

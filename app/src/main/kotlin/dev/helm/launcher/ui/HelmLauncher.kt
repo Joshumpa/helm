@@ -87,6 +87,15 @@ fun HelmLauncher(
         screen = Screen.Home
     }
 
+    val media by nowPlayingVm.media.collectAsState()
+    val pendingMediaNav by vm.pendingMediaNav.collectAsState()
+    LaunchedEffect(media.title, pendingMediaNav) {
+        if (media.title.isNotEmpty() && pendingMediaNav && screen == Screen.Home) {
+            vm.consumeMediaNav()
+            screen = Screen.NowPlaying
+        }
+    }
+
     HelmTheme(colorScheme = colorScheme) {
         AnimatedContent(
             targetState = screen,
@@ -251,7 +260,10 @@ private fun HomeScreen(
 
         AppGrid(
             apps = vm.grid,
-            onAppClick = { handleLaunch(context, it) },
+            onAppClick = { entry ->
+                vm.onAppLaunched(entry.action)
+                handleLaunch(context, entry)
+            },
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = Spacing.md, vertical = Spacing.sm),
@@ -261,7 +273,10 @@ private fun HomeScreen(
 
         Hotseat(
             apps = vm.hotseat,
-            onAppClick = { handleLaunch(context, it) },
+            onAppClick = { entry ->
+                vm.onAppLaunched(entry.action)
+                handleLaunch(context, entry)
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(Spacing.sm),

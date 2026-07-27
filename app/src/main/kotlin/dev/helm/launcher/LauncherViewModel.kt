@@ -2,6 +2,12 @@ package dev.helm.launcher
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 class LauncherViewModel(app: Application) : AndroidViewModel(app) {
 
@@ -23,4 +29,32 @@ class LauncherViewModel(app: Application) : AndroidViewModel(app) {
         AppEntry("360 Cam", "cn.cardoor.zt360", LauncherAction.CAMERA_360),
         AppEntry("Car Info", "com.dofun.carsetting", LauncherAction.CAR_SETTINGS),
     )
+
+    private val _pendingMediaNav = MutableStateFlow(false)
+    val pendingMediaNav: StateFlow<Boolean> = _pendingMediaNav.asStateFlow()
+
+    fun onAppLaunched(action: LauncherAction) {
+        if (action in MEDIA_ACTIONS) {
+            _pendingMediaNav.value = true
+            viewModelScope.launch {
+                delay(3_000)
+                _pendingMediaNav.value = false
+            }
+        }
+    }
+
+    fun consumeMediaNav() {
+        _pendingMediaNav.value = false
+    }
+
+    companion object {
+        private val MEDIA_ACTIONS = setOf(
+            LauncherAction.RADIO,
+            LauncherAction.BLUETOOTH,
+            LauncherAction.CARPLAY,
+            LauncherAction.MUSIC,
+            LauncherAction.VIDEO,
+            LauncherAction.AUX,
+        )
+    }
 }

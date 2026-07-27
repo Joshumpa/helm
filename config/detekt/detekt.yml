@@ -21,5 +21,3 @@ style:
   UnusedPrivateMember:
     active: true
 
-formatting:
-  active: false           # handled by the IDE, not needed in CI

@@ -68,7 +68,7 @@ import dev.helm.sdk.WeatherDataSource
 import dev.helm.themes.ThemeDefaults
 import dev.helm.widgets.WeatherWidget
 
-private enum class Screen { Splash, Home, NowPlaying, Settings }
+private enum class Screen { Splash, Home, NowPlaying, Settings, MusicLibrary }
 
 @Composable
 fun HelmLauncher(
@@ -125,6 +125,18 @@ fun HelmLauncher(
                         (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } +
                             fadeOut(tween(200)))
 
+                    initialState == Screen.Home && targetState == Screen.MusicLibrary ->
+                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } +
+                            fadeIn(tween(300))) togetherWith
+                        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } +
+                            fadeOut(tween(200)))
+
+                    initialState == Screen.MusicLibrary && targetState == Screen.Home ->
+                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } +
+                            fadeIn(tween(300))) togetherWith
+                        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } +
+                            fadeOut(tween(200)))
+
                     initialState == Screen.Splash && targetState == Screen.Home ->
                         fadeIn(tween(600)) togetherWith fadeOut(tween(400))
 
@@ -144,6 +156,10 @@ fun HelmLauncher(
                     themeVm = themeVm,
                     onBack = { screen = Screen.Home },
                 )
+                Screen.MusicLibrary -> MusicLibraryScreen(
+                    onBack = { screen = Screen.Home },
+                    onOpenNowPlaying = { screen = Screen.NowPlaying },
+                )
                 Screen.Home -> HomeScreen(
                     vm = vm,
                     nowPlayingVm = nowPlayingVm,
@@ -152,6 +168,7 @@ fun HelmLauncher(
                     context = LocalContext.current,
                     onOpenNowPlaying = { screen = Screen.NowPlaying },
                     onOpenSettings = { screen = Screen.Settings },
+                    onOpenMusicLibrary = { screen = Screen.MusicLibrary },
                 )
             }
         }
@@ -167,6 +184,7 @@ private fun HomeScreen(
     context: Context,
     onOpenNowPlaying: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenMusicLibrary: () -> Unit,
 ) {
     val media by nowPlayingVm.media.collectAsState()
     val speed by speedVm.speedKmh.collectAsState()
@@ -262,7 +280,8 @@ private fun HomeScreen(
             apps = vm.grid,
             onAppClick = { entry ->
                 vm.onAppLaunched(entry.action)
-                handleLaunch(context, entry)
+                if (entry.action == LauncherAction.MUSIC) onOpenMusicLibrary()
+                else handleLaunch(context, entry)
             },
             modifier = Modifier
                 .weight(1f)

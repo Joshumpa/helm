@@ -49,6 +49,8 @@ dependencies {
     implementation(project(":core"))
     implementation(project(":themes"))
     implementation(project(":widgets"))
+    implementation(project(":audio"))
+    implementation(libs.media3.session)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

@@ -19,4 +19,6 @@ dependencies {
     implementation(project(":core"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.session)
 }

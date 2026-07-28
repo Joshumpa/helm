@@ -60,6 +60,8 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import dev.helm.launcher.R
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -193,12 +195,21 @@ private fun HomeScreen(
                 .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         )
 
-        // Car illustration area — discussed separately
+        // Car illustration
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
-        )
+                .weight(1f)
+                .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(R.drawable.car_home),
+                contentDescription = null,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
 
         HomeBottomBar(
             hotseat = vm.hotseat,

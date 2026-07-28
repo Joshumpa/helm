@@ -2,27 +2,9 @@ package dev.helm.launcher.ui
 
 import android.content.Context
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.foundation.layout.width
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -32,7 +14,20 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.HorizontalDivider
@@ -47,13 +42,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.helm.bluetooth.BluetoothScreen
+import dev.helm.carplay.CarPlayScreen
 import dev.helm.core.Spacing
 import dev.helm.core.neumorphicClickable
 import dev.helm.core.theme.HelmTheme
@@ -61,15 +61,17 @@ import dev.helm.launcher.AppEntry
 import dev.helm.launcher.LauncherAction
 import dev.helm.launcher.LauncherViewModel
 import dev.helm.launcher.media.NowPlayingViewModel
-import dev.helm.launcher.theme.ThemeViewModel
 import dev.helm.launcher.speed.SpeedViewModel
+import dev.helm.launcher.theme.ThemeViewModel
 import dev.helm.launcher.weather.WeatherViewModel
+import dev.helm.radio.RadioScreen
 import dev.helm.sdk.CarSystem
 import dev.helm.sdk.WeatherDataSource
 import dev.helm.themes.ThemeDefaults
 import dev.helm.widgets.WeatherWidget
+import kotlinx.coroutines.delay
 
-private enum class Screen { Splash, Home, NowPlaying, Settings, MusicLibrary }
+private enum class Screen { Splash, Home, NowPlaying, Settings, MusicLibrary, Bluetooth, Radio, CarPlay }
 
 @Composable
 fun HelmLauncher(
@@ -117,6 +119,15 @@ fun HelmLauncher(
                     onBack = { screen = Screen.Home },
                     onOpenNowPlaying = { screen = Screen.NowPlaying },
                 )
+                Screen.Bluetooth -> BluetoothScreen(
+                    onBack = { screen = Screen.Home },
+                )
+                Screen.Radio -> RadioScreen(
+                    onBack = { screen = Screen.Home },
+                )
+                Screen.CarPlay -> CarPlayScreen(
+                    onBack = { screen = Screen.Home },
+                )
                 Screen.Home -> HomeScreen(
                     vm = vm,
                     nowPlayingVm = nowPlayingVm,
@@ -124,8 +135,7 @@ fun HelmLauncher(
                     speedVm = speedVm,
                     context = LocalContext.current,
                     onOpenNowPlaying = { screen = Screen.NowPlaying },
-                    onOpenSettings = { screen = Screen.Settings },
-                    onOpenMusicLibrary = { screen = Screen.MusicLibrary },
+                    onNavigate = { screen = it },
                 )
             }
         }
@@ -140,8 +150,7 @@ private fun HomeScreen(
     speedVm: SpeedViewModel,
     context: Context,
     onOpenNowPlaying: () -> Unit,
-    onOpenSettings: () -> Unit,
-    onOpenMusicLibrary: () -> Unit,
+    onNavigate: (Screen) -> Unit,
 ) {
     val media by nowPlayingVm.media.collectAsState()
     val speed by speedVm.speedKmh.collectAsState()
@@ -164,7 +173,7 @@ private fun HomeScreen(
             }
             WeatherWidget(source = weatherSource, compact = true)
             Spacer(Modifier.width(Spacing.sm))
-            IconButton(onClick = onOpenSettings) {
+            IconButton(onClick = { onNavigate(Screen.Settings) }) {
                 Icon(
                     imageVector = Icons.Filled.Settings,
                     contentDescription = "Configuración",
@@ -237,8 +246,8 @@ private fun HomeScreen(
             apps = vm.grid,
             onAppClick = { entry ->
                 vm.onAppLaunched(entry.action)
-                if (entry.action == LauncherAction.MUSIC) onOpenMusicLibrary()
-                else handleLaunch(context, entry)
+                val target = actionToScreen(entry.action)
+                if (target != null) onNavigate(target) else handleLaunch(context, entry)
             },
             modifier = Modifier
                 .weight(1f)
@@ -251,7 +260,8 @@ private fun HomeScreen(
             apps = vm.hotseat,
             onAppClick = { entry ->
                 vm.onAppLaunched(entry.action)
-                handleLaunch(context, entry)
+                val target = actionToScreen(entry.action)
+                if (target != null) onNavigate(target) else handleLaunch(context, entry)
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -300,46 +310,47 @@ private fun SpeedBadge(speedKmh: Int, modifier: Modifier = Modifier) {
     }
 }
 
-private fun screenTransition(from: Screen, to: Screen): ContentTransform = when {
-    from == Screen.Home && to == Screen.NowPlaying ->
-        (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300))) togetherWith
-        (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } + fadeOut(tween(200)))
-    from == Screen.NowPlaying && to == Screen.Home ->
-        (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } + fadeIn(tween(300))) togetherWith
-        (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200)))
-    from == Screen.Home && to == Screen.Settings ->
+private fun actionToScreen(action: LauncherAction): Screen? = when (action) {
+    LauncherAction.MUSIC      -> Screen.MusicLibrary
+    LauncherAction.SETTINGS   -> Screen.Settings
+    LauncherAction.BLUETOOTH  -> Screen.Bluetooth
+    LauncherAction.RADIO      -> Screen.Radio
+    LauncherAction.CARPLAY    -> Screen.CarPlay
+    else                      -> null
+}
+
+private fun screenTransition(from: Screen, to: Screen): ContentTransform {
+    if (from == Screen.Splash) {
+        return fadeIn(tween(600)) togetherWith fadeOut(tween(400))
+    }
+    if (to == Screen.NowPlaying) {
+        return (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300))) togetherWith
+            (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } + fadeOut(tween(200)))
+    }
+    if (from == Screen.NowPlaying) {
+        return (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } + fadeIn(tween(300))) togetherWith
+            (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200)))
+    }
+    return if (to != Screen.Home) {
         (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300))) togetherWith
-        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } + fadeOut(tween(200)))
-    from == Screen.Settings && to == Screen.Home ->
+            (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } + fadeOut(tween(200)))
+    } else {
         (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } + fadeIn(tween(300))) togetherWith
-        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200)))
-    from == Screen.Home && to == Screen.MusicLibrary ->
-        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300))) togetherWith
-        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } + fadeOut(tween(200)))
-    from == Screen.MusicLibrary && to == Screen.Home ->
-        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } + fadeIn(tween(300))) togetherWith
-        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200)))
-    from == Screen.Splash && to == Screen.Home ->
-        fadeIn(tween(600)) togetherWith fadeOut(tween(400))
-    else ->
-        fadeIn(tween(200)) togetherWith fadeOut(tween(200))
+            (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200)))
+    }
 }
 
 private fun handleLaunch(context: Context, entry: AppEntry) {
     when (entry.action) {
-        LauncherAction.RADIO          -> CarSystem.openRadio(context)
-        LauncherAction.BLUETOOTH      -> CarSystem.openBluetooth(context)
-        LauncherAction.CARPLAY        -> CarSystem.openCarPlay(context)
         LauncherAction.REVERSE_CAMERA -> CarSystem.openReverseCamera(context)
         LauncherAction.RIGHT_CAMERA   -> CarSystem.openRightCamera(context)
         LauncherAction.CAMERA_360     -> CarSystem.openCamera360(context)
-        LauncherAction.MUSIC          -> CarSystem.openMusic(context)
         LauncherAction.VIDEO          -> CarSystem.openVideo(context)
         LauncherAction.DVR            -> CarSystem.openDvr(context)
         LauncherAction.EQ             -> CarSystem.openEq(context)
         LauncherAction.AUX            -> CarSystem.openAux(context)
         LauncherAction.CAR_SETTINGS   -> CarSystem.openCarSettings(context)
-        LauncherAction.SETTINGS       -> CarSystem.openSettings(context)
         LauncherAction.SCREENSAVER    -> CarSystem.triggerScreenSaver(context)
+        else -> Unit
     }
 }

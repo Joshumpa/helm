@@ -2,13 +2,32 @@
 
 ## What is Helm?
 
-Helm is a custom Android launcher platform for car head units, designed to completely
-replace the stock OEM experience (Dofun) on AllWinner A133-based screens. It is not
-a theme or a mod — it is a full platform with its own launcher, SDK, widget engine,
-and theme system.
+Helm is a complete car OS for AllWinner A133 head units. It replaces the stock OEM experience
+(Dofun) entirely — not just the launcher, but every built-in app. Radio, Bluetooth, navigation,
+music, camera, and settings are all Helm's own implementations.
 
-The SDK is the most critical component. It abstracts all OEM/hardware-specific
-communication so the launcher never depends on Dofun internals directly.
+The only external apps Helm launches are user-installed apps (YouTube, WhatsApp, etc.).
+No OEM app is ever launched by Helm.
+
+The SDK is the critical abstraction layer. It isolates all hardware communication (MCU, UART,
+system services) so feature modules never depend on OEM internals.
+
+---
+
+## Development Tracks
+
+Helm runs on two parallel tracks determined by hardware access:
+
+**Track A — No root (active now)**
+Features that work without system app privileges:
+music, Bluetooth (Android APIs), navigation, user app launcher, settings UI, self-update mechanism.
+
+**Track B — Requires root (pending FEL mode)**
+Features that require binding to `com.tw.uart` (system app only):
+FM/AM radio, reverse camera trigger, real MCU data (speed, ADAS), day/night from MCU, CarPlay via ZLINK.
+
+Track B modules must compile and run with stub data sources until root is obtained.
+FEL mode is the planned path to root on this unit.
 
 ---
 
@@ -25,6 +44,17 @@ communication so the launcher never depends on Dofun internals directly.
 - ✅ Icon launch animation (Animatable 1.0→0.78→pop back in AppGrid and Hotseat)
 - ✅ Music player with ExoPlayer + Media3
 - ⬜ Stub modules wired up (`:audio`, `:radio`, `:bluetooth`, `:settings`, `:carplay`, `:navigation`)
+
+---
+
+## Roadmap
+
+| Version | Track | Scope |
+|---------|-------|-------|
+| v1 | A | Daily-driver: music, Bluetooth, navigation, settings, self-update |
+| v2 | B | Post-FEL MCU integration: radio, reverse camera, real speed data, CarPlay/ZLINK |
+| v3 | — | Weather, OBD, voice assistant, automations |
+| v4 | — | Portability to other units, plugin store, public SDK |
 
 ---
 
@@ -47,25 +77,24 @@ Android 10 (API 29)
 │
 ├── System services (Bluetooth, GPS, Audio, MCU)
 │
-└── Helm SDK          ← isolates all OEM/hardware specifics
+└── Helm SDK          ← isolates all hardware/OEM specifics
         │
-        └── Helm Launcher
+        └── Helm feature modules
                 │
                 ├── :core
                 ├── :widgets
                 ├── :themes
-                ├── :audio
-                ├── :navigation
-                ├── :bluetooth
-                ├── :carplay
-                ├── :radio
+                ├── :audio       ← Helm's own music player (Track A)
+                ├── :navigation  ← Helm's own navigation (Track A)
+                ├── :bluetooth   ← Helm's own BT manager (Track A)
+                ├── :radio       ← FM/AM via MCU (Track B)
+                ├── :carplay     ← ZLINK via MCU (Track B)
                 ├── :settings
                 └── :sdk
 ```
 
 Each `:module` is an independent Gradle module. The launcher never calls OEM APIs
-directly — it always goes through the SDK. Swapping hardware support means updating
-`:sdk` only, never the launcher.
+directly — always routes through the SDK.
 
 ---
 
@@ -82,42 +111,38 @@ directly — it always goes through the SDK. Swapping hardware support means upd
 
 ---
 
-## Planned SDK Surface
+## SDK Surface
 
+Track A (available now):
 ```kotlin
-CarSystem.openRadio()
-CarSystem.openBluetooth()
-CarSystem.openCarPlay()
-CarSystem.openReverseCamera()
-CarSystem.openNavigation()
-CarSystem.getSystemInfo(): HelmDeviceInfo
+HelmAudio.nowPlaying(): Flow<NowPlayingState>
+HelmBluetooth.scan(): Flow<List<BluetoothDevice>>
+HelmBluetooth.connect(device: BluetoothDevice): Flow<BtState>
+HelmNavigation.startNavigation(destination: LatLng)
 ```
 
-Internally each method resolves the correct OEM Intent, service call, or MCU command.
+Track B (post-FEL, via McuService):
+```kotlin
+McuService.speed(): Flow<Int>            // km/h from MCU
+McuService.dayNight(): Flow<DayNight>    // MCU code 0x0204
+RadioTuner.tune(frequency: Float)        // FM/AM via MCU UART
+ReverseCamera.state(): Flow<CameraState> // triggered by MCU signal
+CarPlay.state(): Flow<CarPlayState>      // ZLINK adapter via MCU
+```
 
 ---
 
 ## Rules
 
+- No OEM app is ever launched by Helm — every feature is a Helm implementation.
+- User-installed apps (YouTube, WhatsApp, etc.) are opened normally via launcher intent.
 - Do not modify Dofun APKs or inject code into OEM apps.
 - Every feature lives in its own Gradle module — no monolithic app.
-- The launcher never calls OEM Intents directly — always route through the SDK.
-- Design for portability — the SDK layer must not be tied to a single unit.
-- Do not purchase or copy OEM themes.
+- Route all hardware access through the SDK — never call MCU or OEM services directly from a feature module.
+- Track B modules must compile and run on stub data sources before root is available.
 - The display is always **portrait** — max 3 columns in grid, use `Column` not `Row` for vertical layouts.
 - Always apply `.systemBarsPadding()` on the root `Column` of every screen (`enableEdgeToEdge()` is active).
 - ADB command history is logged at `D:\Repos\info apps\adb-commands.md` — check it before suggesting ADB commands.
-
----
-
-## Roadmap
-
-| Version | Scope |
-|---------|-------|
-| v1 | Launcher, widget engine, music |
-| v2 | Weather, OBD integration, theme system |
-| v3 | Voice assistant, automations, gestures |
-| v4 | Plugin store, public SDK, third-party widgets |
 
 ---
 

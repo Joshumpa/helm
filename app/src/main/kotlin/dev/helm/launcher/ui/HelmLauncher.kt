@@ -2,9 +2,7 @@ package dev.helm.launcher.ui
 
 import android.content.Context
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -168,9 +166,6 @@ private fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ClockBar(modifier = Modifier.weight(1f))
-            AnimatedVisibility(visible = speed > 0, enter = fadeIn(), exit = fadeOut()) {
-                SpeedBadge(speedKmh = speed, modifier = Modifier.padding(end = Spacing.sm))
-            }
             WeatherWidget(source = weatherSource, compact = true)
             Spacer(Modifier.width(Spacing.sm))
             IconButton(onClick = { onNavigate(Screen.Settings) }) {
@@ -181,6 +176,13 @@ private fun HomeScreen(
                 )
             }
         }
+
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
+
+        DashboardSection(
+            speedKmh = speed,
+            modifier = Modifier.fillMaxWidth(),
+        )
 
         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f))
 
@@ -266,46 +268,6 @@ private fun HomeScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(Spacing.sm),
-        )
-    }
-}
-
-@Composable
-private fun SpeedBadge(speedKmh: Int, modifier: Modifier = Modifier) {
-    val bgColor by animateColorAsState(
-        targetValue = when {
-            speedKmh >= 90 -> MaterialTheme.colorScheme.error.copy(alpha = 0.18f)
-            speedKmh >= 50 -> MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-            else           -> MaterialTheme.colorScheme.surfaceVariant
-        },
-        animationSpec = tween(400),
-        label = "speed_bg",
-    )
-    val numColor by animateColorAsState(
-        targetValue = when {
-            speedKmh >= 90 -> MaterialTheme.colorScheme.error
-            speedKmh >= 50 -> MaterialTheme.colorScheme.primary
-            else           -> MaterialTheme.colorScheme.onBackground
-        },
-        animationSpec = tween(400),
-        label = "speed_num",
-    )
-
-    Row(
-        modifier = modifier
-            .background(bgColor, RoundedCornerShape(20.dp))
-            .padding(horizontal = Spacing.md, vertical = Spacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "$speedKmh",
-            style = MaterialTheme.typography.titleMedium,
-            color = numColor,
-        )
-        Text(
-            text = " km/h",
-            style = MaterialTheme.typography.labelSmall,
-            color = numColor.copy(alpha = 0.65f),
         )
     }
 }

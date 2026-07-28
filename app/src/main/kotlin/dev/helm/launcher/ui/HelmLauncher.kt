@@ -2,6 +2,7 @@ package dev.helm.launcher.ui
 
 import android.content.Context
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -99,51 +100,7 @@ fun HelmLauncher(
     HelmTheme(colorScheme = colorScheme) {
         AnimatedContent(
             targetState = screen,
-            transitionSpec = {
-                when {
-                    initialState == Screen.Home && targetState == Screen.NowPlaying ->
-                        (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { it } +
-                            fadeIn(tween(300))) togetherWith
-                        (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } +
-                            fadeOut(tween(200)))
-
-                    initialState == Screen.NowPlaying && targetState == Screen.Home ->
-                        (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } +
-                            fadeIn(tween(300))) togetherWith
-                        (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { it } +
-                            fadeOut(tween(200)))
-
-                    initialState == Screen.Home && targetState == Screen.Settings ->
-                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } +
-                            fadeIn(tween(300))) togetherWith
-                        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } +
-                            fadeOut(tween(200)))
-
-                    initialState == Screen.Settings && targetState == Screen.Home ->
-                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } +
-                            fadeIn(tween(300))) togetherWith
-                        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } +
-                            fadeOut(tween(200)))
-
-                    initialState == Screen.Home && targetState == Screen.MusicLibrary ->
-                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } +
-                            fadeIn(tween(300))) togetherWith
-                        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } +
-                            fadeOut(tween(200)))
-
-                    initialState == Screen.MusicLibrary && targetState == Screen.Home ->
-                        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } +
-                            fadeIn(tween(300))) togetherWith
-                        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } +
-                            fadeOut(tween(200)))
-
-                    initialState == Screen.Splash && targetState == Screen.Home ->
-                        fadeIn(tween(600)) togetherWith fadeOut(tween(400))
-
-                    else ->
-                        fadeIn(tween(200)) togetherWith fadeOut(tween(200))
-                }
-            },
+            transitionSpec = { screenTransition(initialState, targetState) },
             label = "screen",
         ) { current ->
             when (current) {
@@ -341,6 +298,31 @@ private fun SpeedBadge(speedKmh: Int, modifier: Modifier = Modifier) {
             color = numColor.copy(alpha = 0.65f),
         )
     }
+}
+
+private fun screenTransition(from: Screen, to: Screen): ContentTransform = when {
+    from == Screen.Home && to == Screen.NowPlaying ->
+        (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300))) togetherWith
+        (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } + fadeOut(tween(200)))
+    from == Screen.NowPlaying && to == Screen.Home ->
+        (slideInVertically(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } + fadeIn(tween(300))) togetherWith
+        (slideOutVertically(tween(240, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200)))
+    from == Screen.Home && to == Screen.Settings ->
+        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300))) togetherWith
+        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } + fadeOut(tween(200)))
+    from == Screen.Settings && to == Screen.Home ->
+        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } + fadeIn(tween(300))) togetherWith
+        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200)))
+    from == Screen.Home && to == Screen.MusicLibrary ->
+        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { it } + fadeIn(tween(300))) togetherWith
+        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { -it / 5 } + fadeOut(tween(200)))
+    from == Screen.MusicLibrary && to == Screen.Home ->
+        (slideInHorizontally(tween(300, easing = FastOutSlowInEasing)) { -it / 5 } + fadeIn(tween(300))) togetherWith
+        (slideOutHorizontally(tween(240, easing = FastOutSlowInEasing)) { it } + fadeOut(tween(200)))
+    from == Screen.Splash && to == Screen.Home ->
+        fadeIn(tween(600)) togetherWith fadeOut(tween(400))
+    else ->
+        fadeIn(tween(200)) togetherWith fadeOut(tween(200))
 }
 
 private fun handleLaunch(context: Context, entry: AppEntry) {

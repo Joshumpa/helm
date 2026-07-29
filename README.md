@@ -6,15 +6,15 @@
 ![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
 ![Android API](https://img.shields.io/badge/Android-10%2B-3DDC84.svg?style=flat-square)
 ![Language](https://img.shields.io/badge/Kotlin-100%25-7F52FF.svg?style=flat-square)
-![Status](https://img.shields.io/badge/status-Phase%202-orange.svg?style=flat-square)
+![Status](https://img.shields.io/badge/status-Phase%203-blue.svg?style=flat-square)
 
 </div>
 
 ---
 
-**Helm is a complete software platform that replaces the stock OEM experience on Android car head units.** Not a theme. Not a launcher mod. A full replacement — built from scratch, with its own SDK, widget engine, and theme system.
+**Helm is a complete car OS for AllWinner A133 head units.** It replaces the stock OEM experience entirely — not just the launcher, but every built-in app. Radio, Bluetooth, navigation, music, camera, and settings are all Helm's own implementations.
 
-The hardware shipping inside most aftermarket Android screens is actually capable. The software holding it back is not. Helm fixes that.
+The only external apps Helm launches are user-installed apps (YouTube, WhatsApp, etc.). No OEM app is ever launched by Helm.
 
 ---
 
@@ -25,115 +25,102 @@ Android 10 (API 29)
 │
 ├── System services (Bluetooth, GPS, Audio, MCU/UART)
 │
-└── Helm SDK                  ← hardware abstraction layer
+└── Helm SDK          ← isolates all hardware/OEM specifics
         │
-        └── Helm Launcher
+        └── Helm feature modules
                 │
-                ├── :core       launcher shell, app grid, HOME toggle
-                ├── :widgets    clock, speed, media, weather, ADAS
-                ├── :themes     colors, typography, backgrounds, animations
-                ├── :audio      EQ, DSP, source routing
-                ├── :navigation map integration, speed overlay
-                ├── :bluetooth  A2DP media, AVRCP controls
-                ├── :carplay    ZLINK / CarPlay session management
-                ├── :radio      FM/AM tuner, MediaSession bridge
-                ├── :settings   in-app configuration UI
-                └── :sdk        OEM abstraction, MCU data pipeline
+                ├── :core        launcher shell, app grid, hotseat
+                ├── :widgets     clock, speed badge, weather canvas
+                ├── :themes      4 variants, DataStore, settings UI
+                ├── :audio       music player (ExoPlayer + Media3)
+                ├── :navigation  navigation stub (Track A)
+                ├── :bluetooth   BT manager stub (Track A)
+                ├── :radio       FM/AM via MCU (Track B)
+                ├── :carplay     ZLINK via MCU (Track B)
+                ├── :settings    in-app configuration UI
+                └── :sdk         OEM abstraction, MCU data pipeline
 ```
 
-The SDK is the critical piece. Every hardware interaction — MCU events, OEM Intents, serial frames — goes through it. The launcher never calls OEM APIs directly. Swapping support for a different head unit means updating `:sdk` only; everything else stays untouched.
+The SDK is the critical abstraction layer. Every hardware interaction goes through it. The launcher never calls OEM APIs directly. Supporting a different head unit means updating `:sdk` only.
+
+---
+
+## Development Tracks
+
+Helm runs on two parallel tracks determined by hardware access:
+
+**Track A — No root (active)**  
+Features that work without system app privileges: music, Bluetooth (Android APIs), navigation, user app launcher, settings UI, self-update mechanism.
+
+**Track B — Requires root (pending FEL mode)**  
+Features that require binding to `com.tw.uart` (system app only): FM/AM radio, reverse camera trigger, real MCU data (speed, ADAS), day/night switching from MCU, CarPlay via ZLINK.
+
+Track B modules compile and run with stub data sources until root is obtained.
 
 ---
 
 ## SDK
 
-**High-level surface** — what the launcher calls:
+**Track A — available now:**
 
 ```kotlin
-CarSystem.openRadio()
-CarSystem.openBluetooth()
-CarSystem.openCarPlay()
-CarSystem.openReverseCamera()
-CarSystem.openNavigation()
-CarSystem.getSystemInfo(): HelmDeviceInfo
+HelmAudio.nowPlaying(): Flow<NowPlayingState>
+HelmBluetooth.scan(): Flow<List<BluetoothDevice>>
+HelmBluetooth.connect(device: BluetoothDevice): Flow<BtState>
+HelmNavigation.startNavigation(destination: LatLng)
 ```
 
-**MCU data pipeline** — typed vehicle events from the UART bus:
+**Track B — post-FEL, via McuService:**
 
 ```kotlin
-interface McuDataSource {
-    fun start()
-    fun stop()
-    fun writeFrame(cmdType: Byte, payload: ByteArray): Boolean
-    fun registerFrameHandler(cmdType: Byte, handler: (ByteArray) -> Unit)
-    fun addListener(listener: McuEventListener)
-}
-
-interface McuEventListener {
-    fun onCarData(data: CarData)           // speed, RPM, gear, temperature
-    fun onAcData(data: AcData)             // climate control state
-    fun onBrakeBelt(data: BrakeBeltData)   // handbrake, belt, turn signals
-    fun onDoor(data: DoorData)
-    fun onSteeringButton(event: SteeringButtonEvent)
-    fun onSourceSwitch(toOem: Boolean)
-    fun onParkingRadar(active: Boolean)
-}
-```
-
-**Public AIDL service** — what third-party apps and widgets bind to:
-
-```kotlin
-interface IHelmSdkService {
-    fun sendMcuCommand(cmdType: Int, data: ByteArray)
-    fun registerMcuListener(listener: IMcuListener)
-    fun unregisterMcuListener(listener: IMcuListener)
-    fun remapSteeringButton(button: SteeringButtonEvent, action: EventAction)
-    fun getConfig(): String
-    fun setConfig(json: String)
-}
+McuService.speed(): Flow<Int>            // km/h from MCU
+McuService.dayNight(): Flow<DayNight>    // MCU code 0x0204
+RadioTuner.tune(frequency: Float)        // FM/AM via MCU UART
+ReverseCamera.state(): Flow<CameraState> // triggered by MCU signal
+CarPlay.state(): Flow<CarPlayState>      // ZLINK adapter via MCU
 ```
 
 ---
 
-## Features
+## What's Built
 
-### Launcher
-- Replaces the OEM launcher as the default home app — dynamically toggleable
-- Horizontal app grid: 2 rows × 4 columns always visible, scrollable
-- Pinned shortcuts with drag-to-reorder
-- Debounced touch input designed for gloves and road vibration
+### Home screen
+- Speed badge pill with animated color: neutral < 50 km/h, primary 50–89, error ≥ 90
+- Weather widget with animated canvas icon (sun, cloud, rain, snow, thunder, haze)
+- Live clock card
+- Car illustration section
+- Split hotseat: 3 left shortcuts | floating mini player | 2 right shortcuts
 
-### Widget Engine
-- Configurable drag-and-drop grid
-- Widgets: clock, vehicle speed, now playing, weather, ADAS alerts, compass, A/C status
-- Per-sensor reactive streams with independent polling rates
-- Live album art, playback controls, Bluetooth metadata
+### Music player (Track A)
+- Own ExoPlayer + Media3 implementation — no dependency on OEM media apps
+- Local file playback with MediaSession integration
+- Mini player on home screen with transport controls and progress bar
+- Full Now Playing screen with artwork, seek, skip, library browser
 
-### Theme System
-- Day / Night / Auto (solar calculation) / System modes
-- Accent, background, and font colors — fully user configurable
-- Frosted-glass card aesthetic that works on any wallpaper
-- UI scale override without affecting font sizes
+### Theme system
+- 4 variants: **Helm** (default dark), **Tesla**, **Android Auto**, **CarPlay**
+- Persistent selection via DataStore
+- Theme settings screen with live preview swatches
+- Both light and dark variants per theme
 
-### MCU Integration
-- Vehicle speed, RPM, gear, handbrake, seat belt, turn signals
-- A/C state: temperature zones, fan speed, airflow mode
-- Steering wheel media buttons, voice button, phone controls
-- Parking radar distances (front and rear, 8 sensors)
-- ADAS events: lane departure, forward collision, stop/go
+### UX
+- Automotive-grade touch targets: 72 dp primary actions, 56 dp secondary
+- Icon launch animation: scale pop with spring physics
+- Button press feedback: NoBouncy shadow + MediumBouncy scale
+- Screen transitions: NowPlaying slides vertical, Settings slides horizontal (250–320 ms)
+- Boot splash: wordmark fade-in 700 ms, auto-dismiss at 1.6 s
+- Portrait-only layout, max 3 columns, always `.systemBarsPadding()` on root
 
-### Radio
-- FM/AM tuner with hardware MCU backend (QN8035 IC)
-- MediaSession fallback — works without root on any vendor unit
-- Per-band presets with long-press to save
+### App launcher
+- App grid with animated icon press
+- Hotseat with configurable shortcuts
+- Launches user-installed apps normally via Android launcher intent
 
 ---
 
 ## How Helm Talks to the Car
 
-Most Android car head units share a common pattern: a microcontroller (MCU) manages
-all the physical inputs — steering wheel buttons, gear sensor, A/C controls, door
-contacts, parking radar — and communicates with Android over a serial UART bus.
+Most Android car head units share a common pattern: a microcontroller (MCU) manages all the physical inputs — steering wheel buttons, gear sensor, A/C controls, door contacts, parking radar — and communicates with Android over a serial UART bus.
 
 On AllWinner A133 firmware, the full chain looks like this:
 
@@ -149,24 +136,19 @@ MCU (hardware)
   source switch)                   directly)
 ```
 
-`android.tw.john.TWUtil` is a hidden platform class provided by AllWinner. It exposes
-30 typed event codes — reverse gear, door state, parking radar, ambient temperature,
-climate control, steering buttons, screen rotation, power-off countdown, and more.
+`android.tw.john.TWUtil` is a hidden platform class provided by AllWinner. It exposes typed event codes — reverse gear, door state, parking radar, ambient temperature, climate control, steering buttons, screen rotation, power-off countdown, and more.
 
-The UART frame format is simple:
+The UART frame format:
 
 ```
 0xF2  dataType  cmdType  payloadLen  [payload...]  checksum
 ```
 
-Helm subscribes to these codes directly (with system UID) and maps each one to a
-typed Kotlin event in `McuEventListener`. No polling. No OEM middleware.
+Helm subscribes to these codes directly (with system UID) and maps each to a typed Kotlin event. No polling. No OEM middleware.
 
 ---
 
 ## Target Hardware
-
-Helm is developed on the following reference unit:
 
 | Component  | Details |
 |------------|---------|
@@ -181,8 +163,6 @@ Helm is developed on the following reference unit:
 | MCU        | T13.1.1 |
 | SELinux    | Permissive |
 
-The architecture is designed to be portable. A different SoC or OEM means updating `:sdk` only.
-
 ---
 
 ## Tech Stack
@@ -193,9 +173,9 @@ The architecture is designed to be portable. A different SoC or OEM means updati
 | UI           | Jetpack Compose + Material 3 |
 | Architecture | MVVM + Clean Architecture per module |
 | Build        | Gradle multi-module |
-| Persistence  | DataStore + Room |
+| Media        | ExoPlayer + Media3 |
+| Persistence  | DataStore |
 | Async        | Coroutines + StateFlow |
-| DI           | Hilt |
 | Min SDK      | Android 10 (API 29) |
 | ABI          | armeabi-v7a (release) |
 
@@ -203,24 +183,23 @@ The architecture is designed to be portable. A different SoC or OEM means updati
 
 ## Roadmap
 
-| Version | Scope | Status |
-|---------|-------|--------|
-| v1 | Launcher, widget engine, music | In progress |
-| v2 | Weather, OBD integration, theme system | Planned |
-| v3 | Voice assistant, automations, gestures | Planned |
-| v4 | Plugin store, public SDK, third-party widgets | Planned |
+| Version | Track | Scope | Status |
+|---------|-------|-------|--------|
+| v1 | A | Daily-driver: music, Bluetooth, navigation, settings, self-update | In progress |
+| v2 | B | Post-FEL MCU: radio, reverse camera, real speed data, CarPlay/ZLINK | Planned |
+| v3 | — | Weather, OBD, voice assistant, automations | Planned |
+| v4 | — | Portability to other units, plugin store, public SDK | Planned |
 
 ### Development Phases
 
 **Phase 1 — Reverse Engineering** ✅  
-Platform fully mapped: system APKs, AIDL interfaces, MCU protocol (30 event codes
-decoded), CarPlay entry points, all required permissions.
+Platform fully mapped: system APKs, AIDL interfaces, MCU protocol decoded, CarPlay entry points, all required permissions identified.
 
-**Phase 2 — Infrastructure** 🚧  
-Gradle multi-module scaffold, Helm SDK interfaces, CI/CD pipeline.
+**Phase 2 — Infrastructure** ✅  
+Gradle multi-module scaffold, Helm SDK interfaces, CI/CD pipeline, static analysis, module boundaries established.
 
-**Phase 3 — User Experience** ⬜  
-Automotive-grade Compose UI, widget engine, theme system, animations.
+**Phase 3 — User Experience** 🚧  
+Automotive-grade Compose UI, theme system, music player, home screen design, screen transitions, animations.
 
 ---
 

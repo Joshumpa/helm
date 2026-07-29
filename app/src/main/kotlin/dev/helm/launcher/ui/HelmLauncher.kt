@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
@@ -62,9 +63,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import dev.helm.launcher.R
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.helm.bluetooth.BluetoothScreen
 import dev.helm.carplay.CarPlayScreen
@@ -195,19 +200,23 @@ private fun HomeScreen(
                 .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         )
 
-        // Car illustration
+        // Car illustration — white surface card matching reference
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
-                .padding(horizontal = Spacing.lg, vertical = Spacing.sm),
+                .padding(horizontal = Spacing.lg, vertical = Spacing.sm)
+                .clip(RoundedCornerShape(20.dp))
+                .background(MaterialTheme.colorScheme.surface),
             contentAlignment = Alignment.Center,
         ) {
             Image(
                 painter = painterResource(R.drawable.car_home),
                 contentDescription = null,
                 contentScale = ContentScale.Fit,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(Spacing.sm),
             )
         }
 
@@ -258,7 +267,11 @@ private fun HomeTopBar(
         ) {
             Text(
                 text = "$speedKmh",
-                style = MaterialTheme.typography.displayLarge,
+                style = TextStyle(
+                    fontSize = 60.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                ),
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
@@ -319,7 +332,11 @@ private fun HomeClockCard(modifier: Modifier = Modifier) {
             )
             Text(
                 text = timeFmt.format(now),
-                style = MaterialTheme.typography.titleMedium,
+                style = TextStyle(
+                    fontSize = 24.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Medium,
+                ),
                 color = MaterialTheme.colorScheme.onBackground,
             )
         }
@@ -425,7 +442,7 @@ private fun MiniPlayerCard(
             Column(Modifier.weight(1f)) {
                 Text(
                     text = if (media.title.isNotEmpty()) media.title else "Sin reproducción",
-                    style = MaterialTheme.typography.labelLarge,
+                    style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Medium),
                     color = MaterialTheme.colorScheme.onBackground,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -433,7 +450,7 @@ private fun MiniPlayerCard(
                 if (media.artist.isNotEmpty()) {
                     Text(
                         text = media.artist,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = TextStyle(fontSize = 16.sp),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -442,22 +459,22 @@ private fun MiniPlayerCard(
             }
 
             // Transport controls
-            IconButton(onClick = { nowPlayingVm.skipPrev() }, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = null, modifier = Modifier.size(20.dp))
+            IconButton(onClick = { nowPlayingVm.skipPrev() }, modifier = Modifier.size(44.dp)) {
+                Icon(Icons.Filled.SkipPrevious, contentDescription = null, modifier = Modifier.size(24.dp))
             }
             IconButton(
                 onClick = { if (media.isPlaying) nowPlayingVm.pause() else nowPlayingVm.play() },
-                modifier = Modifier.size(40.dp),
+                modifier = Modifier.size(56.dp),
             ) {
                 Icon(
                     imageVector = if (media.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = null,
-                    modifier = Modifier.size(26.dp),
+                    modifier = Modifier.size(30.dp),
                     tint = MaterialTheme.colorScheme.primary,
                 )
             }
-            IconButton(onClick = { nowPlayingVm.skipNext() }, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Filled.SkipNext, contentDescription = null, modifier = Modifier.size(20.dp))
+            IconButton(onClick = { nowPlayingVm.skipNext() }, modifier = Modifier.size(44.dp)) {
+                Icon(Icons.Filled.SkipNext, contentDescription = null, modifier = Modifier.size(24.dp))
             }
         }
 
@@ -502,6 +519,7 @@ private fun BottomAppIcon(entry: AppEntry, onClick: () -> Unit, modifier: Modifi
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
+            .defaultMinSize(minWidth = 72.dp, minHeight = 72.dp)
             .neumorphicClickable(
                 onClick = {
                     onClick()
@@ -513,7 +531,7 @@ private fun BottomAppIcon(entry: AppEntry, onClick: () -> Unit, modifier: Modifi
                 cornerRadius = 14.dp,
                 elevation = 4.dp,
             )
-            .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+            .padding(horizontal = Spacing.xs, vertical = Spacing.xs),
     ) {
         AppIconImage(
             pkg = entry.pkg,

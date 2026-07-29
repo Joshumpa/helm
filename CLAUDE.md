@@ -51,7 +51,7 @@ FEL mode is the planned path to root on this unit.
 
 | Version | Track | Scope |
 |---------|-------|-------|
-| v1 | A | Daily-driver: music, Bluetooth, navigation, settings, self-update |
+| v1 | A | Daily-driver: music, Bluetooth, navigation, settings, OTA via WiFi (requires root for silent install) |
 | v2 | B | Post-FEL MCU integration: radio, reverse camera, real speed data, CarPlay/ZLINK |
 | v3 | — | Weather, OBD, voice assistant, automations |
 | v4 | — | Portability to other units, plugin store, public SDK |

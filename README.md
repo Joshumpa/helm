@@ -50,7 +50,7 @@ The SDK is the critical abstraction layer. Every hardware interaction goes throu
 Helm runs on two parallel tracks determined by hardware access:
 
 **Track A — No root (active)**  
-Features that work without system app privileges: music, Bluetooth (Android APIs), navigation, user app launcher, settings UI, self-update mechanism.
+Features that work without system app privileges: music, Bluetooth (Android APIs), navigation, user app launcher, settings UI, OTA updates via WiFi.
 
 **Track B — Requires root (pending FEL mode)**  
 Features that require binding to `com.tw.uart` (system app only): FM/AM radio, reverse camera trigger, real MCU data (speed, ADAS), day/night switching from MCU, CarPlay via ZLINK.
@@ -115,6 +115,12 @@ CarPlay.state(): Flow<CarPlayState>      // ZLINK adapter via MCU
 - App grid with animated icon press
 - Hotseat with configurable shortcuts
 - Launches user-installed apps normally via Android launcher intent
+
+### OTA updates via WiFi *(planned — v1)*
+- Helm checks for and downloads its own updates over WiFi
+- Notifies the user before downloading; user approves before install begins
+- Requires Helm to be installed as a system app (root) for silent APK installation without Android's package installer prompt
+- Obtaining ADB access and root on the head unit (via FEL mode) is the prerequisite for production OTA to work
 
 ---
 
@@ -185,7 +191,7 @@ Helm subscribes to these codes directly (with system UID) and maps each to a typ
 
 | Version | Track | Scope | Status |
 |---------|-------|-------|--------|
-| v1 | A | Daily-driver: music, Bluetooth, navigation, settings, self-update | In progress |
+| v1 | A | Daily-driver: music, Bluetooth, navigation, settings, OTA via WiFi | In progress |
 | v2 | B | Post-FEL MCU: radio, reverse camera, real speed data, CarPlay/ZLINK | Planned |
 | v3 | — | Weather, OBD, voice assistant, automations | Planned |
 | v4 | — | Portability to other units, plugin store, public SDK | Planned |

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Internal files dir: context.filesDir/ota/ — used for downloaded OTA APKs -->
+    <files-path name="ota_downloads" path="ota/" />
+</paths>

@@ -12,8 +12,20 @@ android {
         applicationId = "dev.helm.launcher"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = (findProperty("versionCode") as? String)?.toInt() ?: 1
+        versionName = (findProperty("versionName") as? String) ?: "0.1.0"
+    }
+
+    val keystorePath = System.getenv("KEYSTORE_PATH")
+    if (!keystorePath.isNullOrBlank()) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = System.getenv("KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("KEY_ALIAS")
+                keyPassword = System.getenv("KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -23,6 +35,7 @@ android {
         release {
             isMinifyEnabled = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             ndk {
                 abiFilters += "armeabi-v7a"
             }
@@ -54,6 +67,7 @@ dependencies {
     implementation(project(":radio"))
     implementation(project(":carplay"))
     implementation(project(":settings"))
+    implementation(project(":ota"))
     implementation(libs.media3.session)
 
     implementation(libs.androidx.core.ktx)

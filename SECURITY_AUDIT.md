@@ -35,22 +35,6 @@ El permiso permite rastreo de ubicación continuo en background. No hay onboardi
 
 ## MEDIOS
 
-### M-1 · Recomposición cada segundo en `HomeClockCard`
-**Archivo:** `app/src/main/kotlin/dev/helm/launcher/ui/HelmLauncher.kt:310–316`
-
-`mutableStateOf(LocalDateTime.now())` actualizado cada segundo fuerza recomposición de toda la jerarquía (HomeTopBar → HomeScreen → HelmLauncher). En el SoC A133 puede causar jank visible.
-
-**Fix:** Extraer el estado del reloj a un `@Stable` ViewModel o usar `derivedStateOf` para que solo recomponga el `Text` del tiempo.
-
----
-
-### M-2 · Recomposición cada segundo en `MiniPlayerCard` (posición de reproducción)
-**Archivo:** `app/src/main/kotlin/dev/helm/launcher/ui/HelmLauncher.kt:400–406`
-
-`mutableLongStateOf` actualizado cada segundo en `LaunchedEffect`. Afecta `HomeBottomBar` y el `LinearProgressIndicator`. La barra de progreso debería usar `animateFloatAsState`, no polling.
-
----
-
 ### M-3 · Lambdas no estables capturan estado mutable en `HomeScreen`
 **Archivo:** `app/src/main/kotlin/dev/helm/launcher/ui/HelmLauncher.kt:163–164`
 
@@ -149,7 +133,6 @@ Si la conexión se interrumpe antes de completar, el archivo parcial queda en di
 
 **Corto plazo (v1 estable):**
 - A-14: Añadir reglas ProGuard para reflexión A2DP y entrypoints SDK
-- M-1, M-2: Optimizar recomposiciones de reloj y posición con `derivedStateOf`
 - B-6: Enmascarar secrets de keystore en CI con `::add-mask::`
 
 **Mediano plazo (v2):**

@@ -6,6 +6,7 @@ import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -310,7 +311,8 @@ private fun HomeClockCard(modifier: Modifier = Modifier) {
     var now by remember { mutableStateOf(LocalDateTime.now()) }
     LaunchedEffect(Unit) {
         while (true) {
-            delay(1_000L)
+            // 10 s is sufficient for HH:mm display; reduces recomposition rate 10×
+            delay(10_000L)
             now = LocalDateTime.now()
         }
     }
@@ -404,9 +406,10 @@ private fun MiniPlayerCard(
             delay(1_000L)
         }
     }
-    val progress = if (media.durationMs > 0L) {
+    val rawProgress = if (media.durationMs > 0L) {
         (positionMs.toFloat() / media.durationMs).coerceIn(0f, 1f)
     } else 0f
+    val progress by animateFloatAsState(rawProgress, label = "playerProgress")
 
     Column(
         modifier = modifier

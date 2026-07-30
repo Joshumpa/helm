@@ -1,0 +1,75 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g. 0.2.0)'
+        required: true
+      version_code:
+        description: 'Version code — must be greater than the current published versionCode'
+        required: true
+      changelog:
+        description: 'Changelog (shown in Settings → Actualización)'
+        required: true
+        default: 'Mejoras de rendimiento y corrección de errores'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      # Decode the keystore stored as a base64 secret.
+      # To generate: base64 -w 0 keystore.jks | pbcopy
+      # Then add KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS, KEY_PASSWORD as repo secrets.
+      - name: Decode keystore
+        run: echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > keystore.jks
+
+      - name: Build release APK
+        env:
+          KEYSTORE_PATH: keystore.jks
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          ./gradlew assembleRelease \
+            -PversionCode=${{ inputs.version_code }} \
+            -PversionName=${{ inputs.version_name }}
+
+      - name: Rename APK
+        run: mv app/build/outputs/apk/release/app-release.apk helm.apk
+
+      # jq ensures changelog special characters don't break the JSON
+      - name: Generate latest.json
+        run: |
+          jq -n \
+            --argjson versionCode ${{ inputs.version_code }} \
+            --arg versionName "${{ inputs.version_name }}" \
+            --arg apkUrl "https://github.com/${{ github.repository }}/releases/download/v${{ inputs.version_name }}/helm.apk" \
+            --arg changelog "${{ inputs.changelog }}" \
+            '{versionCode: $versionCode, versionName: $versionName, apkUrl: $apkUrl, changelog: $changelog}' \
+            > latest.json
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ inputs.version_name }}
+          name: Helm v${{ inputs.version_name }}
+          body: ${{ inputs.changelog }}
+          files: |
+            helm.apk
+            latest.json

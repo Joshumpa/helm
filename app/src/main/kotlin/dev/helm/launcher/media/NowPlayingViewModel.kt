@@ -48,4 +48,9 @@ class NowPlayingViewModel(app: Application) : AndroidViewModel(app) {
     fun skipNext() = mediaRepo.transportControls()?.skipToNext()
     fun skipPrev() = mediaRepo.transportControls()?.skipToPrevious()
     fun seekTo(ms: Long) = mediaRepo.transportControls()?.seekTo(ms)
+
+    override fun onCleared() {
+        mediaRepo.release()
+        super.onCleared()
+    }
 }

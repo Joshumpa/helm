@@ -19,29 +19,6 @@
 
 ## ALTOS
 
-### A-4 · `AudioFocus` nunca se abandona en `HelmMusicService.onDestroy()`
-**Archivo:** `audio/src/main/kotlin/dev/helm/audio/HelmMusicService.kt:44`
-
-`ExoPlayer` solicita audio focus con `setHandleAudioFocus(true)`. Al llamar `player.release()`, ExoPlayer no abandona el focus automáticamente. Otras apps (navegación, llamadas) pueden quedar bloqueadas para reproducir audio hasta el reinicio del sistema.
-
-**Fix:**
-```kotlin
-override fun onDestroy() {
-    audioManager.abandonAudioFocusRequest(audioFocusRequest)
-    player.release()
-    mediaSession?.release()
-}
-```
-
----
-
-### A-5 · `MediaController` no se libera explícitamente al cambiar de app de música
-**Archivo:** `launcher/media/MediaRepository.kt:29`
-
-`controller?.unregisterCallback(callback)` sin llamar `controller?.release()`. El objeto `MediaController` anterior mantiene referencia interna al `Binder` del servicio de terceros, impidiendo su liberación por el GC.
-
----
-
 ### A-6 · `BroadcastReceiver` Bluetooth puede acumularse si el ViewModel se recrea
 **Archivo:** `bluetooth/src/main/kotlin/dev/helm/bluetooth/BluetoothScreen.kt:123`
 
@@ -208,7 +185,6 @@ Si la conexión se interrumpe antes de completar, el archivo parcial queda en di
 ## Plan de Acción
 
 **Corto plazo (v1 estable):**
-- A-4: Abandonar AudioFocus explícitamente en `HelmMusicService.onDestroy()`
 - A-14: Añadir reglas ProGuard para reflexión A2DP y entrypoints SDK
 - M-1, M-2: Optimizar recomposiciones de reloj y posición con `derivedStateOf`
 - B-6: Enmascarar secrets de keystore en CI con `::add-mask::`

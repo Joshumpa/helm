@@ -27,10 +27,17 @@ class MediaRepository(private val context: Context) {
 
     fun connectTo(token: MediaSession.Token) {
         controller?.unregisterCallback(callback)
+        controller?.release()
         controller = MediaController(context, token).also {
             it.registerCallback(callback)
             sync()
         }
+    }
+
+    fun release() {
+        controller?.unregisterCallback(callback)
+        controller?.release()
+        controller = null
     }
 
     fun livePositionMs(): Long {

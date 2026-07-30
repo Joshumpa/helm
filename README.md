@@ -34,7 +34,7 @@ Android 10 (API 29)
                 ├── :themes      4 variants, DataStore, settings UI
                 ├── :audio       music player (ExoPlayer + Media3)
                 ├── :navigation  navigation stub (Track A)
-                ├── :bluetooth   BT manager stub (Track A)
+                ├── :bluetooth   BT manager (scan, pair, A2DP) — Track A
                 ├── :radio       FM/AM via MCU (Track B)
                 ├── :carplay     ZLINK via MCU (Track B)
                 ├── :settings    in-app configuration UI
@@ -96,6 +96,12 @@ CarPlay.state(): Flow<CarPlayState>      // ZLINK adapter via MCU
 - Local file playback with MediaSession integration
 - Mini player on home screen with transport controls and progress bar
 - Full Now Playing screen with artwork, seek, skip, library browser
+- Synced lyrics via lrclib.net (scrolling line-by-line in sync with playback)
+
+### Bluetooth (Track A)
+- Device scan and discovery
+- Pairing flow with confirmation dialog
+- A2DP audio profile — music streams to paired speakers or car audio
 
 ### Theme system
 - 4 variants: **Helm** (default dark), **Tesla**, **Android Auto**, **CarPlay**

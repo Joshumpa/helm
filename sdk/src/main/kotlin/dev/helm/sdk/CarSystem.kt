@@ -43,15 +43,24 @@ object CarSystem {
         } catch (_: ActivityNotFoundException) {}
     }
 
-    // URI scheme confirmed from manifest — autoVerify=true on EnterSettingActivity
+    // URI scheme confirmed from manifest — autoVerify=true on EnterSettingActivity (com.dofun.variety)
     fun openSettings(context: Context) {
         try {
-            context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("launcher://variety/setting")))
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse("launcher://variety/setting")).apply {
+                    setPackage("com.dofun.variety")
+                }
+            )
         } catch (_: ActivityNotFoundException) {}
     }
 
+    // Receiver confirmed: com.dofun.overseasvariety.activity.ScreenSaverActivity (com.dofun.variety)
     fun triggerScreenSaver(context: Context) {
-        context.sendBroadcast(Intent("cn.cardoor.intent.action.DAY_DREAM"))
+        context.sendBroadcast(
+            Intent("cn.cardoor.intent.action.DAY_DREAM").apply {
+                setPackage("com.dofun.variety")
+            }
+        )
     }
 
     fun getSystemInfo(): HelmDeviceInfo = HelmDeviceInfo(

@@ -161,8 +161,8 @@ fun HelmLauncher(
                     weatherSource = weatherVm.source,
                     speedVm = speedVm,
                     context = LocalContext.current,
-                    onOpenNowPlaying = { screen = Screen.NowPlaying },
-                    onNavigate = { screen = it },
+                    onOpenNowPlaying = remember { { screen = Screen.NowPlaying } },
+                    onNavigate = remember { { screen = it } },
                 )
             }
         }

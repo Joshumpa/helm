@@ -31,8 +31,8 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     fun setMediaVolume(value: Float) {
         val max = audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        audio.setStreamVolume(AudioManager.STREAM_MUSIC, (value * max).toInt(), 0)
-        _mediaVolume.value = value
+        audio.setStreamVolume(AudioManager.STREAM_MUSIC, (value * max).toInt().coerceIn(0, max), 0)
+        _mediaVolume.value = value.coerceIn(0f, 1f)
     }
 
     private fun readBrightness(): Float =

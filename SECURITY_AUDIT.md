@@ -35,27 +35,6 @@ El permiso permite rastreo de ubicación continuo en background. No hay onboardi
 
 ## MEDIOS
 
-### M-3 · Lambdas no estables capturan estado mutable en `HomeScreen`
-**Archivo:** `app/src/main/kotlin/dev/helm/launcher/ui/HelmLauncher.kt:163–164`
-
-```kotlin
-onOpenNowPlaying = { screen = Screen.NowPlaying },
-onNavigate = { screen = it },
-```
-
-Capturan `screen` (`by remember { mutableStateOf(...) }`), lo que las hace inestables. En cada recomposición se crean nuevas instancias.
-
-**Fix:** Extraer a `remember { { ... } }`.
-
----
-
-### M-4 · `setMediaVolume` sin validación explícita de rango
-**Archivo:** `settings/src/main/kotlin/dev/helm/settings/SettingsViewModel.kt:34`
-
-`setBrightness` usa `.coerceIn(1, 255)` pero `setMediaVolume` no tiene `coerceIn(0, max)` explícito. Inconsistente; podría causar comportamiento inesperado si `value` llega como NaN o negativo.
-
----
-
 ### M-6 · Sin `shrinkResources = true` en el build de release
 **Archivo:** `app/build.gradle.kts`
 

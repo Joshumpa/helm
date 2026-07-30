@@ -12,9 +12,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 
 // GitHub Releases API — public repo, 60 req/hour unauthenticated.
-// Replace YOUR_GITHUB_USERNAME once the repo is created.
 private const val RELEASES_API_URL =
-    "https://api.github.com/repos/YOUR_GITHUB_USERNAME/helm/releases/latest"
+    "https://api.github.com/repos/Joshumpa/helm/releases/latest"
 
 private const val CONNECT_TIMEOUT_MS = 10_000
 private const val READ_TIMEOUT_MS = 30_000

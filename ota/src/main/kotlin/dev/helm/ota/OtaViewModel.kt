@@ -87,8 +87,13 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun isNewer(server: String, installed: String): Boolean {
-        val s = server.split('.').map { it.toIntOrNull() ?: 0 }
-        val c = installed.split('.').map { it.toIntOrNull() ?: 0 }
+        fun String.components(): List<Int> {
+            val core = substringBefore('+').substringBefore('-').trimStart('v')
+            val parts = core.split('.').mapNotNull { it.toIntOrNull() }
+            return parts.ifEmpty { listOf(0) }
+        }
+        val s = server.components()
+        val c = installed.components()
         val len = maxOf(s.size, c.size)
         for (i in 0 until len) {
             val sv = s.getOrElse(i) { 0 }

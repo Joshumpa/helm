@@ -36,8 +36,12 @@ class HelmMusicService : MediaSessionService() {
             .build()
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
-        mediaSession
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
+        // Allow our own app and trusted system controllers (SystemUI, media notification controller).
+        // isTrusted is true for callers with MEDIA_CONTENT_CONTROL or system UID.
+        val isOwnApp = controllerInfo.packageName == packageName
+        return if (isOwnApp || controllerInfo.isTrusted) mediaSession else null
+    }
 
     override fun onDestroy() {
         mediaSession?.run {

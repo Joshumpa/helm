@@ -20,6 +20,10 @@ class HelmNotificationListener : NotificationListenerService() {
         activeNotifications?.forEach { sbn -> extractToken(sbn)?.let { _mediaToken.value = it } }
     }
 
+    override fun onListenerDisconnected() {
+        _mediaToken.value = null
+    }
+
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         extractToken(sbn)?.let { _mediaToken.value = it }
     }

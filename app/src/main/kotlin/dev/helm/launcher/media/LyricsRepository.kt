@@ -4,8 +4,12 @@ import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
+
+private const val MAX_RESPONSE_BYTES = 512 * 1024  // 512 KB — generous for any LRC file
 
 class LyricsRepository {
 
@@ -20,10 +24,14 @@ class LyricsRepository {
                 val conn = (URL(url).openConnection() as HttpURLConnection).apply {
                     connectTimeout = 5_000
                     readTimeout = 8_000
-                    setRequestProperty("User-Agent", "Helm/1.0 (dev.helm.launcher)")
+                    setRequestProperty("User-Agent", "Helm/1.0")
                 }
                 if (conn.responseCode != 200) return@withContext LyricsState.Unavailable
-                val json = JSONObject(conn.inputStream.bufferedReader().readText())
+                val contentType = conn.getHeaderField("Content-Type") ?: ""
+                if (!contentType.startsWith("application/json")) return@withContext LyricsState.Unavailable
+                val bytes = conn.inputStream.readLimited(MAX_RESPONSE_BYTES)
+                    ?: return@withContext LyricsState.Unavailable
+                val json = JSONObject(bytes.toString(Charsets.UTF_8))
                 val synced = json.optString("syncedLyrics", "")
                 val plain  = json.optString("plainLyrics",  "")
                 when {
@@ -35,5 +43,16 @@ class LyricsRepository {
                 LyricsState.Unavailable
             }
         }
+    }
+
+    private fun InputStream.readLimited(maxBytes: Int): ByteArray? {
+        val out = ByteArrayOutputStream()
+        val buf = ByteArray(8_192)
+        var read: Int
+        while (read(buf).also { read = it } != -1) {
+            out.write(buf, 0, read)
+            if (out.size() > maxBytes) return null
+        }
+        return out.toByteArray()
     }
 }

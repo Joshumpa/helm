@@ -156,14 +156,18 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
         try {
             // BluetoothA2dp.connect() is @hide — succeeds post-root with BLUETOOTH_PRIVILEGED
             a2dpProxy?.javaClass?.getMethod("connect", BluetoothDevice::class.java)?.invoke(a2dpProxy, bd)
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            android.util.Log.e("Bluetooth", "A2DP connect failed: ${e::class.simpleName}")
+        }
     }
 
     fun disconnect(device: BtDevice) {
         val bd = adapter?.getRemoteDevice(device.address) ?: return
         try {
             a2dpProxy?.javaClass?.getMethod("disconnect", BluetoothDevice::class.java)?.invoke(a2dpProxy, bd)
-        } catch (_: Exception) { }
+        } catch (e: Exception) {
+            android.util.Log.e("Bluetooth", "A2DP disconnect failed: ${e::class.simpleName}")
+        }
     }
 
     override fun onCleared() {

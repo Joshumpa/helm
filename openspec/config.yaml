@@ -1,0 +1,43 @@
+schema: spec-driven
+
+context: |
+  Project: Helm — complete car OS for AllWinner A133 head units (portrait display, 32-bit armeabi-v7a).
+  Replaces every OEM app; no OEM app is ever launched. User-installed apps open via launcher intent.
+
+  Tech stack: Kotlin, Jetpack Compose, MVVM + Clean Architecture, Gradle multi-module, Min SDK 29.
+  Hardware: portrait-only display, max 3 columns in grid, layouts use Column not Row.
+  enableEdgeToEdge() is active — every root Column must apply .systemBarsPadding().
+
+  Module structure:
+  - :core, :widgets, :themes — shared UI
+  - :audio — music player (ExoPlayer + Media3, lrclib.net lyrics)
+  - :bluetooth — scan, pair, A2DP
+  - :settings — theme, brightness, volume, about
+  - :navigation — launches Google Maps via intent (no own screen)
+  - :radio, :carplay — stubs (blocked on MCU/root, Track B)
+  - :sdk — hardware abstraction layer; all MCU/OEM access goes through here
+
+  Two development tracks:
+  - Track A (active): features without system app privileges
+  - Track B (pending FEL/root): MCU features — radio, reverse camera, real speed, CarPlay via ZLINK
+
+  Conventions:
+  - All hardware access routes through the SDK — never call MCU/OEM services from feature modules
+  - Track B modules must compile and run on stub data until root is available
+  - Sealed DataError propagation in SDK layer
+  - Flow + callbackFlow for MCU callbacks
+
+rules:
+  proposal:
+    - Always specify which Track (A or B) the change belongs to
+    - If Track B, note the root/FEL dependency explicitly
+    - Include a Non-goals section
+  tasks:
+    - Reference the specific Gradle module(s) affected
+    - Flag any task that requires system app privileges as [Track B]
+
+operations:
+  apply:
+    guidance:
+      - Route all hardware access through :sdk, never from feature modules directly
+      - After implementation, run the detekt agent to verify static analysis passes

@@ -2,9 +2,12 @@ package dev.helm.ota
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.util.Log
 import androidx.core.content.FileProvider
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
 import java.io.OutputStream
@@ -78,6 +81,26 @@ class OtaRepository {
             output.write(buffer, 0, read)
             written += read
             if (total > 0) onProgress(written.toFloat() / total)
+        }
+    }
+
+    fun verifyApkSignature(context: Context, apkFile: File): Boolean {
+        return try {
+            val pm = context.packageManager
+            val apkInfo = pm.getPackageArchiveInfo(
+                apkFile.absolutePath,
+                PackageManager.GET_SIGNING_CERTIFICATES,
+            ) ?: return false
+            val installedInfo = pm.getPackageInfo(
+                context.packageName,
+                PackageManager.GET_SIGNING_CERTIFICATES,
+            )
+            val apkCerts = apkInfo.signingInfo?.apkContentsSigners ?: return false
+            val installedCerts = installedInfo.signingInfo?.apkContentsSigners ?: return false
+            apkCerts.any { apk -> installedCerts.any { it.toCharsString() == apk.toCharsString() } }
+        } catch (e: Exception) {
+            Log.e("OTA", "Signature check failed: ${e::class.simpleName}")
+            false
         }
     }
 

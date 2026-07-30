@@ -27,16 +27,23 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
                     _state.value = OtaState.Error("Sin respuesta del servidor")
                     return@launch
                 }
-                val currentName = getApplication<Application>().packageManager
-                    .getPackageInfo(getApplication<Application>().packageName, 0)
-                    .versionName.orEmpty()
+                val currentName = try {
+                    getApplication<Application>().packageManager
+                        .getPackageInfo(getApplication<Application>().packageName, 0)
+                        .versionName.orEmpty()
+                } catch (_: Exception) { "0.0.0" }
                 if (isNewer(latest.versionName, currentName)) {
                     _state.value = OtaState.UpdateAvailable(latest)
                 } else {
                     _state.value = OtaState.UpToDate
                 }
             }.onFailure { e ->
-                _state.value = OtaState.Error(e.message ?: "Error desconocido")
+                _state.value = OtaState.Error(
+                    when (e) {
+                        is java.io.IOException -> "Sin conexión a internet"
+                        else -> "Error al verificar actualización"
+                    }
+                )
             }
         }
     }
@@ -45,14 +52,28 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
         _state.value = OtaState.Downloading(0f)
         viewModelScope.launch(Dispatchers.IO) {
             runCatching {
-                val dir = getApplication<Application>().filesDir.resolve("ota").also { it.mkdirs() }
+                val app = getApplication<Application>()
+                val dir = app.filesDir.resolve("ota").also { it.mkdirs() }
+                dir.listFiles()?.forEach { it.delete() }
+                val tmp = File(dir, "helm-update.apk.tmp")
                 val dest = File(dir, "helm-update.apk")
-                repo.download(info.apkUrl, dest) { progress ->
+                repo.download(info.apkUrl, tmp) { progress ->
                     _state.value = OtaState.Downloading(progress)
                 }
+                if (!repo.verifyApkSignature(app, tmp)) {
+                    tmp.delete()
+                    _state.value = OtaState.Error("La firma del archivo no es válida")
+                    return@runCatching
+                }
+                tmp.renameTo(dest)
                 _state.value = OtaState.ReadyToInstall(dest.absolutePath)
             }.onFailure { e ->
-                _state.value = OtaState.Error(e.message ?: "Error al descargar")
+                _state.value = OtaState.Error(
+                    when (e) {
+                        is java.io.IOException -> "Sin conexión a internet"
+                        else -> "Error al descargar"
+                    }
+                )
             }
         }
     }

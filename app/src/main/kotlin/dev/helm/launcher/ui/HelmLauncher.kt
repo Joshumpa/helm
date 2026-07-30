@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.helm.bluetooth.BluetoothScreen
 import dev.helm.carplay.CarPlayScreen
+import dev.helm.settings.SettingsScreen
 import dev.helm.core.Spacing
 import dev.helm.core.neumorphicClickable
 import dev.helm.core.theme.HelmTheme
@@ -136,7 +137,8 @@ fun HelmLauncher(
                     vm = nowPlayingVm,
                 )
                 Screen.Settings -> SettingsScreen(
-                    themeVm = themeVm,
+                    currentTheme = variant,
+                    onThemeChange = { themeVm.setVariant(it) },
                     onBack = { screen = Screen.Home },
                 )
                 Screen.MusicLibrary -> MusicLibraryScreen(

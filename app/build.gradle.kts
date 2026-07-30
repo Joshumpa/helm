@@ -53,6 +53,7 @@ dependencies {
     implementation(project(":bluetooth"))
     implementation(project(":radio"))
     implementation(project(":carplay"))
+    implementation(project(":settings"))
     implementation(libs.media3.session)
 
     implementation(libs.androidx.core.ktx)

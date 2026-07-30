@@ -6,6 +6,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
@@ -38,6 +39,7 @@ class MusicViewModel(app: Application) : AndroidViewModel(app) {
         connectToService()
     }
 
+    @androidx.annotation.OptIn(UnstableApi::class)
     private fun connectToService() {
         val token = SessionToken(
             getApplication(),

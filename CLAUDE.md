@@ -47,7 +47,7 @@ FEL mode is the planned path to root on this unit.
 - ✅ `:settings` — real implementation (theme, brightness, volume, about)
 - ✅ `:radio` — stub correcto (bloqueado por MCU, Track B)
 - ✅ `:carplay` — stub correcto (bloqueado por MCU, Track B)
-- ⬜ `:navigation` — módulo vacío (Maps se lanza desde el hotseat; decidir si necesita pantalla propia)
+- ✅ `:navigation` — Maps se lanza desde el hotseat (módulo vacío intencional, sin pantalla propia)
 
 ---
 

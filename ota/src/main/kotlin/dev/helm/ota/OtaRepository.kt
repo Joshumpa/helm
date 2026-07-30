@@ -53,7 +53,14 @@ class OtaRepository {
     }
 
     fun download(apkUrl: String, destFile: File, onProgress: (Float) -> Unit) {
-        val conn = URL(apkUrl).openConnection() as HttpURLConnection
+        val parsed = URL(apkUrl)
+        require(parsed.protocol == "https") { "OTA URL scheme must be https" }
+        require(
+            parsed.host.endsWith(".github.com") ||
+            parsed.host.endsWith(".githubusercontent.com"),
+        ) { "OTA URL host not in allowlist: ${parsed.host}" }
+        val conn = parsed.openConnection() as HttpURLConnection
+        conn.instanceFollowRedirects = false
         conn.connectTimeout = CONNECT_TIMEOUT_MS
         conn.readTimeout = READ_TIMEOUT_MS
         try {

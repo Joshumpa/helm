@@ -12,11 +12,12 @@ import kotlinx.coroutines.launch
 class LauncherViewModel(app: Application) : AndroidViewModel(app) {
 
     val hotseat: List<AppEntry> = listOf(
-        AppEntry("Radio", "com.tw.radio", LauncherAction.RADIO),
+        AppEntry("Navigation", "com.google.android.apps.maps", LauncherAction.NAVIGATION),
         AppEntry("Bluetooth", "com.tw.bt", LauncherAction.BLUETOOTH),
+        AppEntry("Settings", "settings", LauncherAction.SETTINGS),
+        AppEntry("Radio", "com.tw.radio", LauncherAction.RADIO),
         AppEntry("CarPlay", "com.zjinnova.zlink", LauncherAction.CARPLAY),
         AppEntry("Camera", "com.tw.reverse", LauncherAction.REVERSE_CAMERA),
-        AppEntry("Settings", "settings", LauncherAction.SETTINGS),
     )
 
     val grid: List<AppEntry> = listOf(

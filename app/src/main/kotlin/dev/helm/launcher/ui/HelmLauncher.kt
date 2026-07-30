@@ -586,6 +586,7 @@ private fun screenTransition(from: Screen, to: Screen): ContentTransform {
 
 private fun handleLaunch(context: Context, entry: AppEntry) {
     when (entry.action) {
+        LauncherAction.NAVIGATION     -> CarSystem.openNavigation(context)
         LauncherAction.REVERSE_CAMERA -> CarSystem.openReverseCamera(context)
         LauncherAction.RIGHT_CAMERA   -> CarSystem.openRightCamera(context)
         LauncherAction.CAMERA_360     -> CarSystem.openCamera360(context)

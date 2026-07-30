@@ -34,6 +34,15 @@ object CarSystem {
 
     fun openCarSettings(context: Context) = launch(context, "com.dofun.carsetting")
 
+    fun openNavigation(context: Context) {
+        val pkg = "com.google.android.apps.maps"
+        val intent = context.packageManager.getLaunchIntentForPackage(pkg)
+            ?: Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0"))
+        try {
+            context.startActivity(intent)
+        } catch (_: ActivityNotFoundException) {}
+    }
+
     // URI scheme confirmed from manifest — autoVerify=true on EnterSettingActivity
     fun openSettings(context: Context) {
         try {

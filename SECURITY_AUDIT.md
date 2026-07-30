@@ -58,21 +58,6 @@ Solo almacena el nombre del tema (enum), no es sensible ahora. Documentar explí
 
 ---
 
-### B-6 · GitHub Actions: contraseñas de keystore sin enmascarar explícitamente
-**Archivo:** `.github/workflows/release.yml:43–47`
-
-`KEYSTORE_PASSWORD` y `KEY_PASSWORD` se pasan como env vars a Gradle. Si Gradle imprime el entorno en un error, los valores podrían quedar en los logs del runner.
-
-**Fix:** Añadir `echo "::add-mask::$KEYSTORE_PASSWORD"` y `echo "::add-mask::$KEY_PASSWORD"` antes del paso de build.
-
----
-
-### B-7 · Sin validación de `Content-Length` vs bytes leídos en descarga OTA
-**Archivo:** `ota/src/main/kotlin/dev/helm/ota/OtaRepository.kt:64–70`
-
-Si la conexión se interrumpe antes de completar, el archivo parcial queda en disco. `verifyApkSignature()` lo rechazará, pero sería más limpio validar también que `destFile.length() == Content-Length`.
-
----
 
 ## Hallazgos Positivos (para referencia)
 

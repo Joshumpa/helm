@@ -71,6 +71,10 @@ class OtaRepository {
                 input.copyTracked(output, total, onProgress)
             }
         }
+        if (total > 0 && destFile.length() != total) {
+            destFile.delete()
+            error("Download incomplete: expected $total bytes, got ${destFile.length()}")
+        }
     }
 
     private fun InputStream.copyTracked(output: OutputStream, total: Long, onProgress: (Float) -> Unit) {

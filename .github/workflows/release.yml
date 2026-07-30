@@ -46,6 +46,8 @@ jobs:
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
+          echo "::add-mask::$KEYSTORE_PASSWORD"
+          echo "::add-mask::$KEY_PASSWORD"
           ./gradlew assembleRelease \
             -PversionCode=${{ inputs.version_code }} \
             -PversionName=${{ inputs.version_name }}

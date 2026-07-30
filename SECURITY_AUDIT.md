@@ -35,14 +35,6 @@ El permiso permite rastreo de ubicación continuo en background. No hay onboardi
 
 ## MEDIOS
 
-### M-8 · Stubs de `:radio` y `:carplay` exponen arquitectura interna en la UI
-**Archivos:** `radio/src/main/kotlin/dev/helm/radio/RadioScreen.kt:68–78`  
-`carplay/src/main/kotlin/dev/helm/carplay/CarPlayScreen.kt:68–78`
-
-Los strings mencionan "FEL mode", "root" y "acceso al hardware MCU". Un auditor externo puede inferir el vector de root, el SoC (Allwinner) y el roadmap de implementación.
-
----
-
 ## BAJOS
 
 ### B-1 · `READ_LOGS` con `tools:ignore="ProtectedPermissions"`

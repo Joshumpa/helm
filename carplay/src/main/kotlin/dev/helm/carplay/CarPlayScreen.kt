@@ -65,15 +65,9 @@ fun CarPlayScreen(onBack: () -> Unit) {
             )
             Spacer(Modifier.height(Spacing.sm))
             Text(
-                text = "Requiere acceso al adaptador ZLINK vía MCU",
+                text = "Disponible próximamente",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = "Disponible post-root (FEL mode)",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
                 textAlign = TextAlign.Center,
             )
         }

@@ -27,12 +27,10 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
                     _state.value = OtaState.Error("Sin respuesta del servidor")
                     return@launch
                 }
-                @Suppress("DEPRECATION")
-                val currentCode = getApplication<Application>()
-                    .packageManager
+                val currentName = getApplication<Application>().packageManager
                     .getPackageInfo(getApplication<Application>().packageName, 0)
-                    .versionCode
-                if (latest.versionCode > currentCode) {
+                    .versionName.orEmpty()
+                if (isNewer(latest.versionName, currentName)) {
                     _state.value = OtaState.UpdateAvailable(latest)
                 } else {
                     _state.value = OtaState.UpToDate
@@ -65,5 +63,18 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
 
     fun reset() {
         _state.value = OtaState.Idle
+    }
+
+    private fun isNewer(server: String, installed: String): Boolean {
+        val s = server.split('.').map { it.toIntOrNull() ?: 0 }
+        val c = installed.split('.').map { it.toIntOrNull() ?: 0 }
+        val len = maxOf(s.size, c.size)
+        for (i in 0 until len) {
+            val sv = s.getOrElse(i) { 0 }
+            val cv = c.getOrElse(i) { 0 }
+            if (sv > cv) return true
+            if (sv < cv) return false
+        }
+        return false
     }
 }

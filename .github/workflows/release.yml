@@ -9,8 +9,8 @@ on:
       version_code:
         description: 'Version code — must be greater than the current published versionCode'
         required: true
-      changelog:
-        description: 'Changelog (shown in Settings → Actualización)'
+      release_notes:
+        description: 'Release notes (shown in Settings → Actualización)'
         required: true
         default: 'Mejoras de rendimiento y corrección de errores'
 
@@ -53,23 +53,10 @@ jobs:
       - name: Rename APK
         run: mv app/build/outputs/apk/release/app-release.apk helm.apk
 
-      # jq ensures changelog special characters don't break the JSON
-      - name: Generate latest.json
-        run: |
-          jq -n \
-            --argjson versionCode ${{ inputs.version_code }} \
-            --arg versionName "${{ inputs.version_name }}" \
-            --arg apkUrl "https://github.com/${{ github.repository }}/releases/download/v${{ inputs.version_name }}/helm.apk" \
-            --arg changelog "${{ inputs.changelog }}" \
-            '{versionCode: $versionCode, versionName: $versionName, apkUrl: $apkUrl, changelog: $changelog}' \
-            > latest.json
-
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ inputs.version_name }}
           name: Helm v${{ inputs.version_name }}
-          body: ${{ inputs.changelog }}
-          files: |
-            helm.apk
-            latest.json
+          body: ${{ inputs.release_notes }}
+          files: helm.apk

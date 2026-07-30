@@ -35,15 +35,6 @@ El permiso permite rastreo de ubicación continuo en background. No hay onboardi
 
 ## MEDIOS
 
-### M-6 · Sin `shrinkResources = true` en el build de release
-**Archivo:** `app/build.gradle.kts`
-
-`isMinifyEnabled = true` pero `shrinkResources` no está declarado. Recursos no referenciados (drawables y strings de módulos stub) se incluyen en el APK de release.
-
-**Fix:** Añadir `shrinkResources = true` en `buildTypes.release`.
-
----
-
 ### M-8 · Stubs de `:radio` y `:carplay` exponen arquitectura interna en la UI
 **Archivos:** `radio/src/main/kotlin/dev/helm/radio/RadioScreen.kt:68–78`  
 `carplay/src/main/kotlin/dev/helm/carplay/CarPlayScreen.kt:68–78`

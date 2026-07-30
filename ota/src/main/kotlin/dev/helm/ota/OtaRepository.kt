@@ -102,7 +102,7 @@ class OtaRepository {
             val apkCerts = apkInfo.signingInfo?.apkContentsSigners ?: return false
             val installedCerts = installedInfo.signingInfo?.apkContentsSigners ?: return false
             apkCerts.any { apk -> installedCerts.any { it.toCharsString() == apk.toCharsString() } }
-        } catch (e: Exception) {
+        } catch (e: PackageManager.NameNotFoundException) {
             Log.e("OTA", "Signature check failed: ${e::class.simpleName}")
             false
         }

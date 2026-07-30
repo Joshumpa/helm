@@ -39,7 +39,7 @@ class GpsSpeedRepository(context: Context) {
                 listener,
                 Looper.getMainLooper(),
             )
-        } catch (e: Exception) {
+        } catch (e: SecurityException) {
             android.util.Log.w("GPS", "Location updates unavailable: ${e::class.simpleName}")
         }
     }

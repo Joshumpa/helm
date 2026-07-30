@@ -33,15 +33,6 @@ El permiso permite rastreo de ubicación continuo en background. No hay onboardi
 
 ---
 
-### A-14 · `ProGuard` habilitado pero `proguard-rules.pro` vacío
-**Archivos:** `app/proguard-rules.pro`, `app/build.gradle.kts:36`
-
-`isMinifyEnabled = true` sin reglas personalizadas. Las reglas por defecto pueden eliminar las reflexiones necesarias (ej. A2DP `@hide`) o exponer clases que deberían obfuscarse.
-
-**Fix:** Añadir reglas de keep para clases usadas por reflection, clases serializadas y entrypoints del SDK.
-
----
-
 ## MEDIOS
 
 ### M-1 · Recomposición cada segundo en `HomeClockCard`

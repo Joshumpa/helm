@@ -36,6 +36,7 @@ import dev.helm.core.neumorphicClickable
 import dev.helm.core.neumorphicShadow
 import dev.helm.ota.OtaState
 import dev.helm.ota.OtaViewModel
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 internal fun OtaUpdateCard(

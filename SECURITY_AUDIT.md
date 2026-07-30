@@ -7,12 +7,68 @@
 
 ## Resultado
 
-| Severidad | Encontrados | Resueltos | Aceptados |
-|-----------|-------------|-----------|-----------|
-| CRÍTICO   | 8           | 8         | 0         |
-| ALTO      | 14          | 12        | 2         |
-| MEDIO     | 8           | 8         | 0         |
-| BAJO      | 7           | 6         | 1         |
+| Severidad | Encontrados | Resueltos | Aceptados | Pendientes |
+|-----------|-------------|-----------|-----------|------------|
+| CRÍTICO   | 8           | 8         | 0         | 0          |
+| ALTO      | 17          | 15        | 2         | 0          |
+| MEDIO     | 8           | 8         | 0         | 0          |
+| BAJO      | 7           | 6         | 1         | 0          |
+
+---
+
+## Hallazgos resueltos — Segunda auditoría 2026-07-29
+
+### N-1 · `HelmMusicService` exportado sin permiso de bind ✅ resuelto en 9f947a3
+**Archivos:** `app/src/main/AndroidManifest.xml:84-91` · `audio/src/main/kotlin/dev/helm/audio/HelmMusicService.kt:41-45`  
+**Severidad:** Alta
+
+`HelmMusicService` tiene `android:exported="true"` sin `android:permission` en el `<service>`. El guard en `onGetSession` compara `controllerInfo.packageName == packageName`, pero ese valor lo suministra el caller vía `connectionHints` — no está verificado por el sistema. Cualquier app puede hacer bind y controlar la reproducción o inyectar URIs al queue de ExoPlayer.
+
+**Fix:**
+```xml
+<service
+    android:name=".HelmMusicService"
+    android:permission="android.permission.MEDIA_CONTENT_CONTROL"
+    android:exported="true">
+```
+En `onGetSession`: confiar solo en `controllerInfo.isTrusted`, eliminar la comparación por `packageName`.
+
+---
+
+### N-2 · OTA — URL de descarga sin validación de host/scheme ✅ resuelto en 36e5b05
+**Archivo:** `ota/src/main/kotlin/dev/helm/ota/OtaRepository.kt:45-56`  
+**Severidad:** Alta
+
+`browser_download_url` de la respuesta JSON de GitHub se pasa verbatim a `URL(apkUrl).openConnection()` sin verificar scheme ni host. `HttpURLConnection` sigue redirects por defecto. Con cuenta de GitHub comprometida o DNS poisoning se puede redirigir la descarga a un servidor arbitrario.
+
+**Fix:**
+```kotlin
+val parsed = URL(apkUrl)
+require(parsed.protocol == "https") { "Scheme inválido" }
+require(
+    parsed.host.endsWith(".github.com") ||
+    parsed.host.endsWith(".githubusercontent.com")
+) { "Host no permitido" }
+conn.instanceFollowRedirects = false
+```
+
+---
+
+### N-3 · OTA — Comparación de firma APK con lógica `any/any` ✅ resuelto en 752900b
+**Archivo:** `ota/src/main/kotlin/dev/helm/ota/OtaRepository.kt:102-104`  
+**Severidad:** Alta
+
+La verificación usa `apkCerts.any { apk -> installedCerts.any { ... } }` — pasa si el APK descargado comparte **al menos un** certificado con el instalado. Si se rota la clave de firma y la anterior queda comprometida, un APK firmado con esa clave vieja seguiría pasando el check. Agravado por N-2.
+
+**Fix:**
+```kotlin
+// Igualdad estricta de conjuntos
+require(
+    apkCerts.map { it.toCharsString() }.toSet() ==
+    installedCerts.map { it.toCharsString() }.toSet()
+)
+```
+Opción más robusta: comparar contra un fingerprint SHA-256 hardcodeado del cert de release, eliminando dependencia del runtime.
 
 ---
 

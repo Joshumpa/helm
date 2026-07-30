@@ -19,20 +19,6 @@
 
 ## ALTOS
 
-### A-6 · `BroadcastReceiver` Bluetooth puede acumularse si el ViewModel se recrea
-**Archivo:** `bluetooth/src/main/kotlin/dev/helm/bluetooth/BluetoothScreen.kt:123`
-
-Se registra con `application.registerReceiver()` en `init {}`. Si el ViewModel se recicla o el Activity muere sin que `onCleared()` sea llamado, el receiver queda activo. En pantallas que se recrean frecuentemente pueden acumularse receivers duplicados.
-
----
-
-### A-7 · `MusicViewModel.controllerFuture` no se libera si la Future falla
-**Archivo:** `launcher/music/MusicViewModel.kt:46–51, 69`
-
-Si `HelmMusicService` nunca se inicia, `buildAsync()` devuelve una Future que nunca completa. `releaseFuture()` en `onCleared()` cancela la Future pero el contexto interno puede quedar referenciado hasta la recolección por GC.
-
----
-
 ### A-10 · Sin Certificate Pinning para `lrclib.net`
 **Archivo:** `launcher/media/LyricsRepository.kt:20`
 
@@ -44,20 +30,6 @@ Si `HelmMusicService` nunca se inicia, `buildAsync()` devuelve una Future que nu
 **Archivo:** `app/src/main/AndroidManifest.xml:22`
 
 El permiso permite rastreo de ubicación continuo en background. No hay onboarding que explique por qué es necesario ni lógica que lo desactive cuando no se use navegación.
-
----
-
-### A-12 · `@SuppressLint("MissingPermission")` en toda la clase Bluetooth
-**Archivo:** `bluetooth/src/main/kotlin/dev/helm/bluetooth/BluetoothScreen.kt:56`
-
-La anotación suprime la advertencia en toda la clase. Algunos métodos usan permisos sin verificar `checkSelfPermission()` primero, lo que lanza `SecurityException` en API 31+ si el permiso fue revocado.
-
----
-
-### A-13 · `GpsSpeedRepository`: `requestLocationUpdates` con `catch (_: Exception) {}`
-**Archivo:** `launcher/speed/GpsSpeedRepository.kt:42`
-
-`SecurityException` (permiso revocado) y `IllegalArgumentException` se silencian completamente. El velocímetro muestra 0 km/h sin ningún feedback al usuario ni log para debugging.
 
 ---
 

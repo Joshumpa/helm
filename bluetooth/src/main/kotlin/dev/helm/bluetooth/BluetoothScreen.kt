@@ -10,6 +10,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Build
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -139,8 +142,21 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun startScan() {
+        if (!hasBluetoothScanPermission()) {
+            Log.w("Bluetooth", "startScan: BLUETOOTH_SCAN permission not granted")
+            return
+        }
         _discovered.value = emptyList()
         adapter?.startDiscovery()
+    }
+
+    private fun hasBluetoothScanPermission(): Boolean {
+        val perm = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+            android.Manifest.permission.BLUETOOTH_SCAN
+        else
+            android.Manifest.permission.BLUETOOTH
+        return getApplication<Application>()
+            .checkSelfPermission(perm) == PackageManager.PERMISSION_GRANTED
     }
 
     fun stopScan() {

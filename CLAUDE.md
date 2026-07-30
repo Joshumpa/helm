@@ -42,8 +42,12 @@ FEL mode is the planned path to root on this unit.
 - ✅ Speed badge pill (animated color: neutral < 50 km/h, primary 50–89, error ≥ 90)
 - ✅ Button press animation (NoBouncy+StiffnessHigh shadow, MediumBouncy scale 0.96f pop-back)
 - ✅ Icon launch animation (Animatable 1.0→0.78→pop back in AppGrid and Hotseat)
-- ✅ Music player with ExoPlayer + Media3
-- ⬜ Stub modules wired up (`:audio`, `:radio`, `:bluetooth`, `:settings`, `:carplay`, `:navigation`)
+- ✅ Music player with ExoPlayer + Media3 (library + NowPlaying + synced lyrics via lrclib.net)
+- ✅ `:bluetooth` — real implementation (scan, pair, A2DP)
+- ✅ `:settings` — real implementation (theme, brightness, volume, about)
+- ✅ `:radio` — stub correcto (bloqueado por MCU, Track B)
+- ✅ `:carplay` — stub correcto (bloqueado por MCU, Track B)
+- ⬜ `:navigation` — módulo vacío (Maps se lanza desde el hotseat; decidir si necesita pantalla propia)
 
 ---
 

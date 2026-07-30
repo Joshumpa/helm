@@ -1,9 +1,11 @@
 package dev.helm.launcher.ui
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -23,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import dev.helm.core.Spacing
 import dev.helm.launcher.media.LrcLine
 import dev.helm.launcher.media.LyricsState
@@ -38,22 +42,27 @@ fun LyricsView(
             is LyricsState.Idle -> Unit
 
             is LyricsState.Loading -> CircularProgressIndicator(
-                modifier = Modifier.align(Alignment.Center),
-                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.Center).size(20.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                strokeWidth = 2.dp,
             )
 
             is LyricsState.Unavailable -> Text(
-                text = "No lyrics found",
+                text = "No lyrics",
                 modifier = Modifier.align(Alignment.Center),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f),
             )
 
             is LyricsState.Plain -> Text(
                 text = lyrics.text,
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.85f),
-                modifier = Modifier.verticalScroll(rememberScrollState()),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.lg, vertical = Spacing.md),
             )
 
             is LyricsState.Synced -> SyncedLyricsView(
@@ -83,17 +92,18 @@ private fun SyncedLyricsView(lines: List<LrcLine>, positionMs: Long) {
     LazyColumn(
         state = listState,
         modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = Spacing.lg, vertical = Spacing.md),
     ) {
         itemsIndexed(lines, key = { i, _ -> i }) { index, line ->
             val current = index == currentIndex
             val alpha by animateFloatAsState(
                 targetValue = if (current) 1f else 0.25f,
-                animationSpec = tween(300),
+                animationSpec = tween(150),
                 label = "lyric_alpha",
             )
             val lineScale by animateFloatAsState(
-                targetValue = if (current) 1.18f else 1f,
-                animationSpec = tween(300),
+                targetValue = if (current) 1.1f else 1f,
+                animationSpec = tween(150),
                 label = "lyric_scale",
             )
             Text(
@@ -102,6 +112,8 @@ private fun SyncedLyricsView(lines: List<LrcLine>, positionMs: Long) {
                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = alpha),
                 fontWeight = if (current) FontWeight.Bold else FontWeight.Normal,
                 textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = Spacing.sm)

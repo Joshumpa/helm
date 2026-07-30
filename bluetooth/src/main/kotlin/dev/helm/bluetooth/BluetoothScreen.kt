@@ -18,33 +18,35 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Bluetooth
 import androidx.compose.material.icons.filled.BluetoothDisabled
-import androidx.compose.material.icons.filled.BluetoothSearching
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.automirrored.filled.BluetoothSearching
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.helm.core.Spacing
+import dev.helm.core.neumorphicClickable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -72,9 +74,13 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
     private val _connectedAddress = MutableStateFlow<String?>(null)
     val connectedAddress: StateFlow<String?> = _connectedAddress.asStateFlow()
 
+    private val _bondingAddress = MutableStateFlow<String?>(null)
+    val bondingAddress: StateFlow<String?> = _bondingAddress.asStateFlow()
+
     private var a2dpProxy: BluetoothProfile? = null
 
     private val receiver = object : BroadcastReceiver() {
+        @Suppress("DEPRECATION") // getParcelableExtra(String) deprecated at API 33; minSdk is 29
         override fun onReceive(context: Context, intent: Intent) {
             when (intent.action) {
                 BluetoothDevice.ACTION_FOUND -> {
@@ -92,6 +98,15 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
                     _enabled.value = state == BluetoothAdapter.STATE_ON
                     if (_enabled.value) loadPaired()
                 }
+                BluetoothDevice.ACTION_BOND_STATE_CHANGED -> {
+                    val device = intent.getParcelableExtra<BluetoothDevice>(BluetoothDevice.EXTRA_DEVICE)
+                        ?: return
+                    when (intent.getIntExtra(BluetoothDevice.EXTRA_BOND_STATE, BluetoothDevice.BOND_NONE)) {
+                        BluetoothDevice.BOND_BONDING -> _bondingAddress.value = device.address
+                        BluetoothDevice.BOND_BONDED -> { _bondingAddress.value = null; loadPaired() }
+                        BluetoothDevice.BOND_NONE -> _bondingAddress.value = null
+                    }
+                }
             }
         }
     }
@@ -103,6 +118,7 @@ class BluetoothViewModel(application: Application) : AndroidViewModel(applicatio
             addAction(BluetoothAdapter.ACTION_DISCOVERY_STARTED)
             addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
             addAction(BluetoothAdapter.ACTION_STATE_CHANGED)
+            addAction(BluetoothDevice.ACTION_BOND_STATE_CHANGED)
         }
         application.registerReceiver(receiver, filter)
         adapter?.getProfileProxy(application, object : BluetoothProfile.ServiceListener {
@@ -165,25 +181,36 @@ fun BluetoothScreen(onBack: () -> Unit) {
     val discovered by vm.discovered.collectAsState()
     val scanning by vm.scanning.collectAsState()
     val connectedAddress by vm.connectedAddress.collectAsState()
+    val bondingAddress by vm.bondingAddress.collectAsState()
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .systemBarsPadding()
-            .padding(Spacing.lg)
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md)
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack) {
+        // Header
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.heightIn(min = 72.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .neumorphicClickable(onClick = onBack, cornerRadius = 16.dp),
+                contentAlignment = Alignment.Center,
+            ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Atrás",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.size(24.dp),
                 )
             }
-            Spacer(Modifier.width(Spacing.sm))
+            Spacer(Modifier.width(Spacing.md))
             Text(
                 text = "Bluetooth",
                 style = MaterialTheme.typography.headlineSmall,
@@ -200,29 +227,39 @@ fun BluetoothScreen(onBack: () -> Unit) {
 
         if (!enabled) {
             Box(
-                modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.xl),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = Spacing.xxl),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    text = "Bluetooth desactivado",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.BluetoothDisabled,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(48.dp),
+                    )
+                    Text(
+                        text = "Bluetooth desactivado",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             return@Column
         }
 
         if (paired.isNotEmpty()) {
-            Text(
-                text = "Dispositivos emparejados",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            SectionHeader("Dispositivos emparejados")
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 paired.forEach { device ->
                     DeviceRow(
                         device = device,
                         isConnected = device.address == connectedAddress,
+                        isBonding = device.address == bondingAddress,
                         onConnect = { vm.connect(device) },
                         onDisconnect = { vm.disconnect(device) },
                     )
@@ -230,29 +267,19 @@ fun BluetoothScreen(onBack: () -> Unit) {
             }
         }
 
-        Button(
-            onClick = { if (scanning) vm.stopScan() else vm.startScan() },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Icon(
-                imageVector = if (scanning) Icons.Filled.BluetoothSearching else Icons.Filled.Bluetooth,
-                contentDescription = null,
-            )
-            Spacer(Modifier.width(Spacing.sm))
-            Text(if (scanning) "Detener búsqueda" else "Buscar dispositivos")
-        }
+        ScanButton(
+            scanning = scanning,
+            onToggle = { if (scanning) vm.stopScan() else vm.startScan() },
+        )
 
         if (discovered.isNotEmpty()) {
-            Text(
-                text = "Disponibles",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-            )
+            SectionHeader("Disponibles")
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
                 discovered.forEach { device ->
                     DeviceRow(
                         device = device,
                         isConnected = false,
+                        isBonding = device.address == bondingAddress,
                         onConnect = { vm.connect(device) },
                         onDisconnect = {},
                     )
@@ -263,37 +290,144 @@ fun BluetoothScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun DeviceRow(
-    device: BtDevice,
-    isConnected: Boolean,
-    onConnect: () -> Unit,
-    onDisconnect: () -> Unit,
-) {
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(horizontal = Spacing.xs),
+    )
+}
+
+@Composable
+private fun ScanButton(scanning: Boolean, onToggle: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(12.dp))
-            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+            .heightIn(min = 72.dp)
+            .neumorphicClickable(
+                onClick = onToggle,
+                cornerRadius = 20.dp,
+                showAccentBorder = scanning,
+            )
+            .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        if (scanning) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(20.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        } else {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.BluetoothSearching,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.size(22.dp),
+            )
+        }
+        Spacer(Modifier.width(Spacing.sm))
+        Text(
+            text = if (scanning) "Buscando…" else "Buscar dispositivos",
+            style = MaterialTheme.typography.titleMedium,
+            color = if (scanning) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
+@Composable
+private fun DeviceRow(
+    device: BtDevice,
+    isConnected: Boolean,
+    isBonding: Boolean,
+    onConnect: () -> Unit,
+    onDisconnect: () -> Unit,
+) {
+    val primary = MaterialTheme.colorScheme.primary
+    val onBackground = MaterialTheme.colorScheme.onBackground
+    val onSurfaceVariant = MaterialTheme.colorScheme.onSurfaceVariant
+    val surfaceVariant = MaterialTheme.colorScheme.surfaceVariant
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 72.dp)
+            .neumorphicClickable(
+                onClick = {
+                    when {
+                        isBonding -> Unit
+                        isConnected -> onDisconnect()
+                        else -> onConnect()
+                    }
+                },
+                cornerRadius = 16.dp,
+                showAccentBorder = isConnected,
+            )
+            .padding(horizontal = Spacing.md, vertical = Spacing.md),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .background(
+                    color = if (isConnected) primary.copy(alpha = 0.15f) else surfaceVariant,
+                    shape = CircleShape,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (isBonding) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(22.dp),
+                    strokeWidth = 2.dp,
+                    color = primary,
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Filled.Bluetooth,
+                    contentDescription = null,
+                    tint = if (isConnected) primary else onSurfaceVariant,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+
         Column(Modifier.weight(1f)) {
             Text(
                 text = device.name,
                 style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onBackground,
+                color = onBackground,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            if (isConnected) {
-                Text(
+            when {
+                isConnected -> Text(
                     text = "Conectado",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = primary,
+                )
+                isBonding -> Text(
+                    text = "Emparejando…",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = onSurfaceVariant,
+                )
+                device.bonded -> Text(
+                    text = "Emparejado",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = onSurfaceVariant,
                 )
             }
         }
+
         if (isConnected) {
-            TextButton(onClick = onDisconnect) { Text("Desconectar") }
-        } else {
-            TextButton(onClick = onConnect) { Text("Conectar") }
+            Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = null,
+                tint = primary,
+                modifier = Modifier.size(22.dp),
+            )
         }
     }
 }

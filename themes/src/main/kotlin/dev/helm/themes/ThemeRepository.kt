@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 
+// Unencrypted Preferences DataStore — stores only non-sensitive UI preferences (theme name).
+// Do NOT store credentials, tokens, or user data here; use EncryptedSharedPreferences instead.
 private val Context.themeDataStore: DataStore<Preferences> by preferencesDataStore(name = "helm_theme")
 
 class ThemeRepository(context: Context) {

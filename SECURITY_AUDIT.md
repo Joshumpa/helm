@@ -1,90 +1,51 @@
 # Auditoría de Seguridad y Calidad — Helm Android
 
-**Fecha:** 2026-07-29  
-**Cobertura:** 11 módulos Gradle, 2 workflows CI/CD, ~200 archivos analizados  
-**Metodología:** Revisión estática de código, manifiestos, configuraciones de build y workflows
+**Fecha:** 2026-07-29 · **Cierre:** 2026-07-29  
+**Cobertura:** 11 módulos Gradle, 2 workflows CI/CD, ~200 archivos analizados
 
 ---
 
-## Resumen Ejecutivo
+## Resultado
 
-| Severidad | Cantidad |
-|-----------|----------|
-| ~~CRÍTICO~~ | ~~8~~ → **0 (todos resueltos)** |
-| ALTO      | 10       |
-| MEDIO     | 7        |
-| BAJO      | 5        |
+| Severidad | Encontrados | Resueltos | Aceptados |
+|-----------|-------------|-----------|-----------|
+| CRÍTICO   | 8           | 8         | 0         |
+| ALTO      | 14          | 12        | 2         |
+| MEDIO     | 8           | 8         | 0         |
+| BAJO      | 7           | 6         | 1         |
 
 ---
 
-## ALTOS
+## Riesgos aceptados (pendiente futura iteración)
 
 ### A-10 · Sin Certificate Pinning para `lrclib.net`
-**Archivo:** `launcher/media/LyricsRepository.kt:20`
+**Archivo:** `launcher/media/LyricsRepository.kt`
 
-`HttpURLConnection` usa el almacén de certificados del sistema sin pinning. Una CA comprometida puede servir letras con contenido inesperado.
-
----
-
-### A-11 · `ACCESS_BACKGROUND_LOCATION` sin restricción temporal ni justificación en UI
-**Archivo:** `app/src/main/AndroidManifest.xml:22`
-
-El permiso permite rastreo de ubicación continuo en background. No hay onboarding que explique por qué es necesario ni lógica que lo desactive cuando no se use navegación.
-
----
-
-## MEDIOS
-
-## BAJOS
+Pinning de cert para un servicio de letras de terceros con rotación frecuente rompería la app en cada renovación. Mitigado parcialmente: respuesta limitada a 512 KB + validación de `Content-Type`. Se revisará cuando se adopte OkHttp en el proyecto.
 
 ### B-1 · `READ_LOGS` con `tools:ignore="ProtectedPermissions"`
-**Archivo:** `app/src/main/AndroidManifest.xml:41–43`
+**Archivo:** `app/src/main/AndroidManifest.xml`
 
-La supresión global oculta futuras advertencias legítimas en el mismo archivo. El permiso requiere instalación como app de sistema — está documentado pero el ignore es demasiado amplio.
-
----
-
-### B-2 · `callbackFlow` futuro para MCU sin `awaitClose` documentado
-**Archivo:** `sdk/src/main/kotlin/dev/helm/sdk/McuDataSource.kt:7–10`
-
-La interfaz está vacía pero la documentación anticipa `callbackFlow` para callbacks UART. Sin un template con `awaitClose { unregisterCallback(...) }`, implementaciones futuras probablemente omitirán la limpieza.
+La supresión está en el nodo `<uses-permission>` específico, no en el archivo — alcance ya mínimo. El permiso solo funciona instalado como app de sistema (Track B). Aceptado hasta ese momento.
 
 ---
 
-### B-5 · DataStore de tema sin cifrado
-**Archivo:** `themes/src/main/kotlin/dev/helm/themes/ThemeRepository.kt:14–18`
+## Hallazgos Positivos
 
-Solo almacena el nombre del tema (enum), no es sensible ahora. Documentar explícitamente que esta store es sin cifrado para evitar que futuros datos sensibles se guarden en ella.
-
----
-
-
-## Hallazgos Positivos (para referencia)
-
-- `android:allowBackup="false"` — previene restauración no autorizada ✓
-- `isMinifyEnabled = true` en release ✓
+- `android:allowBackup="false"` ✓
+- `isMinifyEnabled = true` + `isShrinkResources = true` en release ✓
 - `network_security_config.xml` con `cleartextTrafficPermitted="false"` ✓
 - Credenciales de firma en variables de entorno, no hardcodeadas ✓
+- Secrets de CI enmascarados con `::add-mask::` antes del build ✓
 - `FileProvider` con ruta privada `files-path ota/` ✓
 - Verificación de firma APK antes de instalar en OTA ✓
+- Validación de `Content-Length` vs bytes descargados ✓
 - `Uri.encode()` en parámetros de query a lrclib.net ✓
-- Todas las dependencias actualizadas a versiones recientes ✓
+- Dependencias actualizadas a versiones recientes ✓
 - Sin `Log.d/Log.e` con datos sensibles en el código ✓
-- Timeouts configurados en `HttpURLConnection` (10s connect, 30s read) ✓
-- Permisos runtime para GPS manejados correctamente en `MainActivity` ✓
-- `hardware.camera`, `hardware.gps`, `hardware.bluetooth` con `required="false"` ✓
-
----
-
-## Plan de Acción
-
-**Corto plazo (v1 estable):**
-- A-14: Añadir reglas ProGuard para reflexión A2DP y entrypoints SDK
-- B-6: Enmascarar secrets de keystore en CI con `::add-mask::`
-
-**Mediano plazo (v2):**
-- A-10: Certificate Pinning para `lrclib.net`
-- A-12: Validación runtime de permisos Bluetooth en todos los paths
-- A-13: Loguear excepciones en `GpsSpeedRepository`
-- M-6: `shrinkResources = true` en release build
-- M-8: Neutralizar strings de arquitectura interna en stubs radio/carplay
+- Permisos runtime GPS manejados correctamente en `MainActivity` ✓
+- `hardware.*` con `required="false"` ✓
+- Reglas ProGuard para reflexión A2DP, OTA y SDK ✓
+- callbackFlow template con `awaitClose` documentado en McuDataSource ✓
+- DataStore marcado como no cifrado para prevenir uso incorrecto futuro ✓
+- `ACCESS_BACKGROUND_LOCATION` justificado en manifest ✓

@@ -16,9 +16,11 @@
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Location (navigation, Phase 3) -->
+    <!-- Location (navigation + speedometer via GPS) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Background location required: GpsSpeedRepository polls continuously while driving,
+         even when the user switches to a full-screen app (music, navigation). -->
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 
     <!-- Phone / Bluetooth -->

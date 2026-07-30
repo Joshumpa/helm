@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.SystemUpdate
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -66,7 +67,7 @@ import dev.helm.core.neumorphicShadow
 import dev.helm.themes.HelmThemeVariant
 import dev.helm.themes.ThemeDefaults
 
-private enum class Section { Root, Appearance, Display, Sound, About }
+private enum class Section { Root, Appearance, Display, Sound, About, Updates }
 
 @Composable
 fun SettingsScreen(
@@ -101,6 +102,9 @@ fun SettingsScreen(
                 onBack = { section = Section.Root },
             )
             Section.About -> AboutSection(
+                onBack = { section = Section.Root },
+            )
+            Section.Updates -> UpdatesSection(
                 onBack = { section = Section.Root },
             )
         }
@@ -154,6 +158,12 @@ private fun SettingsRoot(
                 title = "Sonido",
                 subtitle = "Volumen de medios",
                 onClick = { onSection(Section.Sound) },
+            )
+            SettingsRow(
+                icon = Icons.Filled.SystemUpdate,
+                title = "Actualización",
+                subtitle = "Buscar nueva versión",
+                onClick = { onSection(Section.Updates) },
             )
             SettingsRow(
                 icon = Icons.Filled.Info,
@@ -479,6 +489,29 @@ private fun AboutRow(label: String, value: String) {
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
         )
+    }
+}
+
+// ─── Updates ──────────────────────────────────────────────────────────────────
+
+@Composable
+private fun UpdatesSection(onBack: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .systemBarsPadding(),
+    ) {
+        ScreenHeader(title = "Actualización", onBack = onBack)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        ) {
+            OtaUpdateCard()
+        }
     }
 }
 

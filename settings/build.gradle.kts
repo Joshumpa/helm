@@ -19,6 +19,7 @@ android {
 dependencies {
     implementation(project(":sdk"))
     implementation(project(":core"))
+    implementation(project(":ota"))
     implementation(project(":themes"))
     implementation(libs.androidx.core.ktx)
     implementation(libs.kotlinx.coroutines.android)

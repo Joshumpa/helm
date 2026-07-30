@@ -9,6 +9,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 
+@UnstableApi
 class HelmMusicService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
@@ -37,7 +38,6 @@ class HelmMusicService : MediaSessionService() {
             .build()
     }
 
-    @OptIn(UnstableApi::class)
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? {
         // Allow our own app and trusted system controllers (SystemUI, media notification controller).
         // isTrusted is true for callers with MEDIA_CONTENT_CONTROL or system UID.

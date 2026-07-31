@@ -205,16 +205,20 @@ private fun HomeScreen(
                 .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         )
 
-        // Car illustration — white surface card matching reference
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
                 .padding(horizontal = Spacing.lg, vertical = Spacing.sm)
-                .clip(RoundedCornerShape(20.dp))
-                .background(MaterialTheme.colorScheme.surface),
+                .clip(RoundedCornerShape(20.dp)),
             contentAlignment = Alignment.Center,
         ) {
+            Image(
+                painter = painterResource(R.drawable.street_bg),
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
             Image(
                 painter = painterResource(R.drawable.car_home),
                 contentDescription = null,

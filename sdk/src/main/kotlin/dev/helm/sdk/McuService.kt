@@ -117,16 +117,7 @@ class McuService internal constructor(
 
         // Task 1.10 — RTC time sync: set system clock from MCU on boot.
         scope.launch {
-            rtcTimeSync.collect { sync ->
-                runCatching {
-                    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-                    val cal = java.util.Calendar.getInstance().apply {
-                        set(sync.year, sync.month - 1, sync.day, sync.hour, sync.minute, sync.second)
-                    }
-                    @Suppress("DEPRECATION")
-                    alarmManager.setTime(cal.timeInMillis)
-                }
-            }
+            rtcTimeSync.collect { sync -> applyRtcTime(sync) }
         }
 
         // Task 7.2 — CarPlay audio source: set to CARPLAY on session start, restore on end.
@@ -165,6 +156,19 @@ class McuService internal constructor(
                 addAction(Intent.ACTION_TIME_CHANGED)
             }
             context.registerReceiver(receiver, filter)
+        }
+    }
+
+    // SET_TIME is a system-only permission granted post-FEL; runCatching handles the pre-root case.
+    @android.annotation.SuppressLint("MissingPermission")
+    private fun applyRtcTime(sync: McuEvent.RtcTimeSyncReceived) {
+        runCatching {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            val cal = java.util.Calendar.getInstance().apply {
+                set(sync.year, sync.month - 1, sync.day, sync.hour, sync.minute, sync.second)
+            }
+            @Suppress("DEPRECATION")
+            alarmManager.setTime(cal.timeInMillis)
         }
     }
 

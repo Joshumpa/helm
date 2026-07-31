@@ -8,11 +8,19 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import dev.helm.sdk.AudioSourceId
+import dev.helm.sdk.McuServiceLocator
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 
 @UnstableApi
 class HelmMusicService : MediaSessionService() {
 
     private var mediaSession: MediaSession? = null
+    private val serviceScope = CoroutineScope(SupervisorJob())
 
     override fun onCreate() {
         super.onCreate()
@@ -36,6 +44,17 @@ class HelmMusicService : MediaSessionService() {
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(sessionActivity)
             .build()
+
+        // Task 2.7 — pause music when MCU switches audio source away from USB/BT music.
+        if (McuServiceLocator.isInitialized) {
+            McuServiceLocator.service.audioSource
+                .onEach { sourceId ->
+                    if (sourceId != AudioSourceId.USB_MUSIC && sourceId != AudioSourceId.BLUETOOTH) {
+                        player.pause()
+                    }
+                }
+                .launchIn(serviceScope)
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? =
@@ -44,6 +63,7 @@ class HelmMusicService : MediaSessionService() {
         if (controllerInfo.isTrusted) mediaSession else null
 
     override fun onDestroy() {
+        serviceScope.cancel()
         mediaSession?.run {
             player.release()
             release()

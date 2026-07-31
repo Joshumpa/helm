@@ -19,6 +19,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -108,7 +109,8 @@ fun HelmLauncher(
     speedVm: SpeedViewModel = viewModel(),
 ) {
     val variant by themeVm.variant.collectAsState()
-    val colorScheme = ThemeDefaults.schemeFor(variant, isSystemInDarkTheme())
+    val isDark by themeVm.isDark.collectAsState()
+    val colorScheme = ThemeDefaults.schemeFor(variant, isDark)
     var screen by remember { mutableStateOf(Screen.Splash) }
 
     LaunchedEffect(Unit) {

@@ -7,26 +7,18 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import dev.helm.sdk.McuDataSource
 
-// Displays now-playing info from the active McuDataSource.
-// When McuDataSourceStub is injected this shows empty state (speed=0, no ADAS events).
-// Real data flows once Helm is installed as a system app with AIDL access to com.tw.uart.
 @Composable
 fun MediaWidget(
-    mcu: McuDataSource,
+    speed: Int = 0,
     title: String = "",
     artist: String = "",
     modifier: Modifier = Modifier,
 ) {
-    val speed by mcu.speed.collectAsState()
-
     Column(modifier = modifier) {
         if (title.isNotEmpty()) {
             Text(

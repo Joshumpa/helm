@@ -69,6 +69,7 @@ dependencies {
     implementation(project(":carplay"))
     implementation(project(":settings"))
     implementation(project(":ota"))
+    implementation(project(":camera"))
     implementation(libs.media3.session)
 
     implementation(libs.androidx.core.ktx)

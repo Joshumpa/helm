@@ -122,11 +122,10 @@ CarPlay.state(): Flow<CarPlayState>      // ZLINK adapter via MCU
 - Hotseat with configurable shortcuts
 - Launches user-installed apps normally via Android launcher intent
 
-### OTA updates via WiFi *(planned — v1)*
-- Helm checks for and downloads its own updates over WiFi
-- Notifies the user before downloading; user approves before install begins
-- Requires Helm to be installed as a system app (root) for silent APK installation without Android's package installer prompt
-- Obtaining ADB access and root on the head unit (via FEL mode) is the prerequisite for production OTA to work
+### OTA updates via WiFi
+- Helm checks GitHub Releases for new versions and downloads updates over WiFi
+- Shows the new version and full changelog before downloading — user approves before anything is downloaded
+- Uses Android's standard package installer — no root required
 
 ---
 

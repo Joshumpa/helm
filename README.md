@@ -3,7 +3,7 @@
 ![](.github/assets/helm-banner.svg)
 
 [![CI](https://github.com/Joshumpa/helm/actions/workflows/ci.yml/badge.svg)](https://github.com/Joshumpa/helm/actions/workflows/ci.yml)
-![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)
+![License](https://img.shields.io/badge/license-GPL--3.0-blue.svg?style=flat-square)
 ![Android API](https://img.shields.io/badge/Android-10%2B-3DDC84.svg?style=flat-square)
 ![Language](https://img.shields.io/badge/Kotlin-100%25-7F52FF.svg?style=flat-square)
 ![Status](https://img.shields.io/badge/status-Phase%203-blue.svg?style=flat-square)
@@ -223,4 +223,4 @@ Automotive-grade Compose UI, theme system, music player, home screen design, scr
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+GPL-3.0 — see [LICENSE](LICENSE).

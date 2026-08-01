@@ -1,0 +1,37 @@
+name: Feature request
+description: Suggest a new feature or improvement for Helm
+labels: ["enhancement"]
+body:
+  - type: dropdown
+    id: track
+    attributes:
+      label: Track
+      description: Which development track would this belong to?
+      options:
+        - Track A (no root required)
+        - Track B (requires root / FEL mode)
+        - Unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem does this solve? Why is it relevant for a car OS?
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: How would you like this to work?
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Any other approaches you thought about?

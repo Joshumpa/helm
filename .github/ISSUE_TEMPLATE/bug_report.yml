@@ -1,0 +1,69 @@
+name: Bug report
+description: Report a bug in Helm
+labels: ["bug"]
+body:
+  - type: dropdown
+    id: track
+    attributes:
+      label: Track
+      description: Which track does this affect?
+      options:
+        - Track A (music, Bluetooth, settings, OTA)
+        - Track B (radio, camera, MCU data, CarPlay)
+        - Both / unsure
+    validations:
+      required: true
+
+  - type: input
+    id: helm-version
+    attributes:
+      label: Helm version
+      placeholder: "e.g. v1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: mcu-firmware
+    attributes:
+      label: MCU firmware version
+      description: Found in Helm Settings → About → Firmware MCU
+      placeholder: "e.g. T13.1.1"
+
+  - type: input
+    id: android-build
+    attributes:
+      label: Android build
+      description: Found in Helm Settings → About → Android
+      placeholder: "e.g. Android 10 (API 29)"
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open...
+        2. Tap...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logcat output
+      description: Paste relevant logcat lines if available
+      render: text

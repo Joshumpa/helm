@@ -1,9 +1,11 @@
 package dev.helm.launcher.weather
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import dev.helm.sdk.OpenMeteoWeatherDataSource
 import dev.helm.sdk.WeatherDataSource
-import dev.helm.sdk.WeatherDataSourceStub
 
-class WeatherViewModel : ViewModel() {
-    val source: WeatherDataSource = WeatherDataSourceStub()
+class WeatherViewModel(app: Application) : AndroidViewModel(app) {
+    val source: WeatherDataSource = OpenMeteoWeatherDataSource(app, viewModelScope)
 }

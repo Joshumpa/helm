@@ -54,6 +54,7 @@ fun WeatherWidget(
     compact: Boolean = false,
 ) {
     val state by source.state.collectAsState()
+    val s = state ?: return
 
     val transition = rememberInfiniteTransition(label = "weather")
     val rotation by transition.animateFloat(
@@ -89,12 +90,12 @@ fun WeatherWidget(
         ) {
             WeatherCanvas(
                 modifier = Modifier.size(36.dp),
-                condition = state.condition,
+                condition = s.condition,
                 rotation = rotation, fall = fall, pulse = pulse, flash = flash,
                 cloudColor = cloudColor,
             )
             Text(
-                text = "${state.temperatureCelsius.toInt()}°",
+                text = "${s.temperatureCelsius.toInt()}°",
                 style = MaterialTheme.typography.titleMedium,
                 color = onBg,
             )
@@ -106,18 +107,18 @@ fun WeatherWidget(
         ) {
             WeatherCanvas(
                 modifier = Modifier.size(64.dp),
-                condition = state.condition,
+                condition = s.condition,
                 rotation = rotation, fall = fall, pulse = pulse, flash = flash,
                 cloudColor = cloudColor,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "${state.temperatureCelsius.toInt()}°",
+                text = "${s.temperatureCelsius.toInt()}°",
                 style = MaterialTheme.typography.titleMedium,
                 color = onBg,
             )
             Text(
-                text = state.condition.label,
+                text = s.condition.label,
                 style = MaterialTheme.typography.labelSmall,
                 color = onVariant,
             )

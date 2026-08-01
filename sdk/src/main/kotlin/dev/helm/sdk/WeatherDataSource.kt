@@ -8,5 +8,5 @@ data class WeatherState(
 )
 
 interface WeatherDataSource {
-    val state: StateFlow<WeatherState>
+    val state: StateFlow<WeatherState?>
 }

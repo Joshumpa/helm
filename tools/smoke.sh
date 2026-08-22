@@ -66,7 +66,7 @@ center_of() {
 wait_for_text() {
   local want="$1" deadline=$(( SECONDS + TIMEOUT ))
   while [ $SECONDS -lt $deadline ]; do
-    ui_dump | grep -qF "text=\"$want\"" && return 0
+    sees_now "$want" && return 0
     sleep 1
   done
   return 1
@@ -89,16 +89,20 @@ tap_text() {
 back() { adb_ shell input keyevent KEYCODE_BACK; sleep 2; }
 
 # Sees $1 right now, without the polling grace period.
-sees_now() { ui_dump | grep -qF "text=\"$1\""; }
+# Match with `case` on a captured dump rather than `ui_dump | grep -q`: under
+# `pipefail`, grep -q exits on the first hit and SIGPIPEs adb, which makes the
+# whole pipeline report 141 exactly when the text WAS found.
+sees_now() { case "$(ui_dump)" in *"text=\"$1\""*) return 0 ;; *) return 1 ;; esac; }
 
 launch() {
   adb_ shell am start -n "$PKG/.MainActivity" >/dev/null
   # Wait for the activity to actually be resumed rather than sleeping a fixed
   # amount: a cold start on a CI emulator takes far longer than on a warm local
   # one, and a fixed sleep turns that into a flaky failure.
-  local deadline=$(( SECONDS + 60 ))
+  local deadline=$(( SECONDS + 60 )) top
   while [ $SECONDS -lt $deadline ]; do
-    adb_ shell dumpsys activity activities 2>/dev/null | grep -q "mResumedActivity.*$PKG" && break
+    top="$(adb_ shell dumpsys activity activities 2>/dev/null | grep -F mResumedActivity)"
+    case "$top" in *"$PKG"*) break ;; esac
     sleep 1
   done
   sleep 3   # splash auto-dismisses at 1.6 s

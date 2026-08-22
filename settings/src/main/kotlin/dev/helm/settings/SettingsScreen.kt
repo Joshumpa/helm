@@ -13,6 +13,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -30,6 +31,9 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -37,9 +41,12 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material.icons.filled.BrightnessHigh
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SystemUpdate
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,13 +58,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -66,8 +77,11 @@ import dev.helm.core.neumorphicClickable
 import dev.helm.core.neumorphicShadow
 import dev.helm.themes.HelmThemeVariant
 import dev.helm.themes.ThemeDefaults
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
-private enum class Section { Root, Appearance, Display, Sound, About, Updates }
+private enum class Section { Root, Appearance, Display, Sound, About, Updates, Diagnostics }
 
 @Composable
 fun SettingsScreen(
@@ -106,6 +120,9 @@ fun SettingsScreen(
                 onBack = { section = Section.Root },
             )
             Section.Updates -> UpdatesSection(
+                onBack = { section = Section.Root },
+            )
+            Section.Diagnostics -> DiagnosticsSection(
                 onBack = { section = Section.Root },
             )
         }
@@ -171,6 +188,12 @@ private fun SettingsRoot(
                 title = "Acerca de",
                 subtitle = "Versión y dispositivo",
                 onClick = { onSection(Section.About) },
+            )
+            SettingsRow(
+                icon = Icons.Filled.Code,
+                title = "Diagnóstico",
+                subtitle = "Terminal de comandos",
+                onClick = { onSection(Section.Diagnostics) },
             )
         }
     }
@@ -618,4 +641,184 @@ private fun SettingsSectionCard(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         content = content,
     )
+}
+
+// ─── Diagnostics ──────────────────────────────────────────────────────────────
+
+private val QUICK_CMDS = listOf(
+    "getprop ro.product.model",
+    "getprop ro.build.version.release",
+    "dumpsys battery",
+    "ip addr show wlan0",
+    "ping -c 3 8.8.8.8",
+)
+
+@Composable
+private fun DiagnosticsSection(onBack: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    var command by remember { mutableStateOf("") }
+    var output by remember { mutableStateOf("Listo.") }
+    var running by remember { mutableStateOf(false) }
+    val outputScroll = rememberScrollState()
+    val bg = MaterialTheme.colorScheme.background
+
+    fun execute(cmd: String) {
+        if (cmd.isBlank() || running) return
+        running = true
+        output = "$ $cmd\n\nEjecutando…"
+        scope.launch {
+            val result = withContext(Dispatchers.IO) {
+                try {
+                    val proc = ProcessBuilder("sh", "-c", cmd)
+                        .redirectErrorStream(true)
+                        .start()
+                    val text = proc.inputStream.bufferedReader().readText().take(8192)
+                    proc.waitFor()
+                    "$ $cmd\n\n${text.ifBlank { "(sin salida)" }}"
+                } catch (e: java.io.IOException) {
+                    "$ $cmd\n\nError: ${e.message}"
+                }
+            }
+            output = result
+            running = false
+            outputScroll.animateScrollTo(0)
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(bg)
+            .systemBarsPadding(),
+    ) {
+        ScreenHeader(title = "Diagnóstico", onBack = onBack)
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+            ) {
+                QUICK_CMDS.forEach { cmd ->
+                    QuickCommandChip(text = cmd) {
+                        command = cmd
+                        execute(cmd)
+                    }
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                BasicTextField(
+                    value = command,
+                    onValueChange = { command = it },
+                    modifier = Modifier.weight(1f),
+                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                        color = MaterialTheme.colorScheme.onBackground,
+                        fontFamily = FontFamily.Monospace,
+                    ),
+                    cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                    keyboardActions = KeyboardActions(onDone = { execute(command.trim()) }),
+                    decorationBox = { inner ->
+                        Box(
+                            modifier = Modifier
+                                .neumorphicShadow(backgroundColor = bg, cornerRadius = 12.dp, elevation = 4.dp)
+                                .background(bg, RoundedCornerShape(12.dp))
+                                .padding(horizontal = Spacing.md, vertical = Spacing.sm)
+                                .defaultMinSize(minHeight = 56.dp),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            if (command.isEmpty()) {
+                                Text(
+                                    text = "$ comando…",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                                )
+                            }
+                            inner()
+                        }
+                    },
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .neumorphicClickable(
+                            onClick = { execute(command.trim()) },
+                            cornerRadius = 14.dp,
+                            elevation = 4.dp,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (running) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "Ejecutar",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.lg, vertical = Spacing.md)
+                .neumorphicShadow(backgroundColor = bg, cornerRadius = 16.dp, elevation = 6.dp)
+                .background(bg, RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(16.dp)),
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(outputScroll)
+                    .padding(Spacing.md),
+            ) {
+                Text(
+                    text = output,
+                    style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                    color = MaterialTheme.colorScheme.onBackground,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun QuickCommandChip(text: String, onClick: () -> Unit) {
+    val bg = MaterialTheme.colorScheme.background
+    Box(
+        modifier = Modifier
+            .defaultMinSize(minHeight = 40.dp)
+            .neumorphicClickable(onClick = onClick, cornerRadius = 20.dp, elevation = 3.dp)
+            .padding(horizontal = Spacing.md, vertical = Spacing.sm),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall.copy(fontFamily = FontFamily.Monospace),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+        )
+    }
 }

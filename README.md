@@ -86,7 +86,7 @@ CarPlay.state(): Flow<CarPlayState>      // ZLINK adapter via MCU
 
 ### Home screen
 - Speed badge pill with animated color: neutral < 50 km/h, primary 50–89, error ≥ 90
-- Weather widget with animated canvas icon (sun, cloud, rain, snow, thunder, haze)
+- Weather widget — real data via Open-Meteo API, animated canvas icon (sun, cloud, rain, snow, thunder, haze)
 - Live clock card
 - Car illustration section
 - Split hotseat: 3 left shortcuts | floating mini player | 2 right shortcuts

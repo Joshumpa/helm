@@ -15,6 +15,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import java.lang.ref.WeakReference
 
 // Task 6.3/6.4/6.5/6.6/6.7/6.8 — full-screen reverse camera. Launched by ReverseCameraManager.
 // Back press is a no-op while in reverse; dismissed programmatically when gear changes.
@@ -33,7 +34,7 @@ class ReverseCameraActivity : Activity() {
         surfaceView = SurfaceView(this)
         radarOverlay = RadarOverlayView(this)
         noSignalBanner = TextView(this).apply {
-            text = "Sin señal"
+            text = getString(R.string.camera_no_signal)
             setTextColor(android.graphics.Color.WHITE)
             textSize = 18f
             gravity = android.view.Gravity.CENTER
@@ -51,7 +52,7 @@ class ReverseCameraActivity : Activity() {
         })
 
         setContentView(root)
-        _instance = this
+        _instance = WeakReference(this)
 
         if (!McuServiceLocator.isInitialized) {
             showStubMode()
@@ -90,7 +91,7 @@ class ReverseCameraActivity : Activity() {
     }
 
     override fun onDestroy() {
-        if (_instance === this) _instance = null
+        if (_instance?.get() === this) _instance = null
         if (McuServiceLocator.isInitialized) {
             activityScope.launch { McuServiceLocator.service.send(0x0304, 0) }
         }
@@ -101,15 +102,15 @@ class ReverseCameraActivity : Activity() {
     // Task 6.7 — stub mode placeholder
     private fun showStubMode() {
         surfaceView.visibility = View.GONE
-        noSignalBanner.text = "Cámara reversa — No disponible (Track B)"
+        noSignalBanner.text = getString(R.string.camera_unavailable)
         noSignalBanner.visibility = View.VISIBLE
     }
 
     companion object {
-        @Volatile private var _instance: ReverseCameraActivity? = null
+        @Volatile private var _instance: WeakReference<ReverseCameraActivity>? = null
 
         fun requestDismiss() {
-            _instance?.finish()
+            _instance?.get()?.finish()
         }
     }
 }

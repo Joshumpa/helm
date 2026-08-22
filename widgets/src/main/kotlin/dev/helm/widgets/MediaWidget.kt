@@ -14,10 +14,10 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun MediaWidget(
+    modifier: Modifier = Modifier,
     speed: Int = 0,
     title: String = "",
     artist: String = "",
-    modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier) {
         if (title.isNotEmpty()) {

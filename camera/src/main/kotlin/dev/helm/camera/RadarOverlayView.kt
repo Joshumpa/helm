@@ -21,6 +21,8 @@ class RadarOverlayView @JvmOverloads constructor(
     private var frontMax = 255
     private var rearMax = 255
 
+    private val drawRect = RectF()
+
     private val safePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.GREEN
         style = Paint.Style.FILL
@@ -60,17 +62,17 @@ class RadarOverlayView @JvmOverloads constructor(
         // Front sensors — top of screen
         frontDistances.forEachIndexed { i, dist ->
             val paint = paintForDistance(dist)
-            val rect = RectF(i * sensorW + 4f, 4f, (i + 1) * sensorW - 4f, barH)
-            canvas.drawRoundRect(rect, 8f, 8f, paint)
-            canvas.drawText("${dist}cm", rect.centerX(), rect.centerY() + labelPaint.textSize / 3, labelPaint)
+            drawRect.set(i * sensorW + 4f, 4f, (i + 1) * sensorW - 4f, barH)
+            canvas.drawRoundRect(drawRect, 8f, 8f, paint)
+            canvas.drawText("${dist}cm", drawRect.centerX(), drawRect.centerY() + labelPaint.textSize / 3, labelPaint)
         }
 
         // Rear sensors — bottom of screen
         rearDistances.forEachIndexed { i, dist ->
             val paint = paintForDistance(dist)
-            val rect = RectF(i * sensorW + 4f, h - barH - 4f, (i + 1) * sensorW - 4f, h - 4f)
-            canvas.drawRoundRect(rect, 8f, 8f, paint)
-            canvas.drawText("${dist}cm", rect.centerX(), rect.centerY() + labelPaint.textSize / 3, labelPaint)
+            drawRect.set(i * sensorW + 4f, h - barH - 4f, (i + 1) * sensorW - 4f, h - 4f)
+            canvas.drawRoundRect(drawRect, 8f, 8f, paint)
+            canvas.drawText("${dist}cm", drawRect.centerX(), drawRect.centerY() + labelPaint.textSize / 3, labelPaint)
         }
     }
 

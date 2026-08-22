@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="camera_no_signal">Sin señal</string>
+    <string name="camera_unavailable">Cámara reversa — No disponible (Track B)</string>
+</resources>

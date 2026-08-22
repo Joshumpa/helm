@@ -63,8 +63,8 @@ private val actionIconMap: Map<LauncherAction, ImageVector> = mapOf(
 fun AppIconImage(
     pkg: String,
     label: String,
-    action: LauncherAction? = null,
     modifier: Modifier = Modifier,
+    action: LauncherAction? = null,
 ) {
     val icon = action?.let { actionIconMap[it] }
     if (icon != null) {

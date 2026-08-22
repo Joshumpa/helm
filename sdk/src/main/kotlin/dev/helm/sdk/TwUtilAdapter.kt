@@ -1,5 +1,6 @@
 package dev.helm.sdk
 
+import android.annotation.SuppressLint
 import android.os.Handler
 import android.os.Looper
 import android.os.Message
@@ -9,6 +10,7 @@ import kotlinx.coroutines.flow.callbackFlow
 
 // Track B only. Reflective wrapper over android.tw.john.TWUtil (platform @hide class,
 // requires android.uid.system). Assumes TWUtil(Handler) constructor — verified post-FEL.
+@SuppressLint("PrivateApi")
 internal class TwUtilAdapter {
 
     companion object {
@@ -149,6 +151,8 @@ internal class TwUtilAdapter {
         )
     }
 
+    // TODO [Track B / post-FEL]: if MCU doesn't send 0x010A proactively, discover the request
+    // command byte via UART capture and call send() with it before waiting for this event.
     private fun parseMcuVersion(obj: Any?): McuEvent {
         val version = when (obj) {
             is ByteArray -> String(obj, Charsets.US_ASCII).trimEnd(' ')

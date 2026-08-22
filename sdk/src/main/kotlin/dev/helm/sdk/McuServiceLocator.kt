@@ -1,5 +1,6 @@
 package dev.helm.sdk
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.os.Process
 import kotlinx.coroutines.CoroutineScope
@@ -9,6 +10,8 @@ import kotlinx.coroutines.SupervisorJob
 // Chooses TwUtilMcuDataSource when running as system UID; StubMcuDataSource otherwise.
 object McuServiceLocator {
 
+    // applicationContext is passed in — not a real leak.
+    @SuppressLint("StaticFieldLeak")
     @Volatile private var _service: McuService? = null
 
     val service: McuService

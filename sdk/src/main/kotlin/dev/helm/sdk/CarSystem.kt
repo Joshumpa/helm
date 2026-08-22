@@ -65,7 +65,7 @@ object CarSystem {
 
     fun getSystemInfo(): HelmDeviceInfo = HelmDeviceInfo(
         soc = Build.HARDWARE,
-        mcuVersion = "",        // TODO: read from com.tw.uart once IPC mechanism confirmed
+        mcuVersion = runCatching { McuServiceLocator.service.firmwareVersion.value }.getOrDefault("—"),
         systemVersion = Build.VERSION.RELEASE,
     )
 

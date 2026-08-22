@@ -102,6 +102,7 @@ fun SettingsScreen(
                 onBack = { section = Section.Root },
             )
             Section.About -> AboutSection(
+                vm = vm,
                 onBack = { section = Section.Root },
             )
             Section.Updates -> UpdatesSection(
@@ -436,13 +437,17 @@ private fun SoundSection(
 // ─── About ────────────────────────────────────────────────────────────────────
 
 @Composable
-private fun AboutSection(onBack: () -> Unit) {
+private fun AboutSection(
+    vm: SettingsViewModel,
+    onBack: () -> Unit,
+) {
     val context = LocalContext.current
     val versionName = remember {
         runCatching {
             context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "—"
         }.getOrDefault("—")
     }
+    val mcuVersion by vm.mcuVersion.collectAsState()
 
     Column(
         modifier = Modifier
@@ -459,6 +464,7 @@ private fun AboutSection(onBack: () -> Unit) {
         ) {
             SettingsSectionCard {
                 AboutRow(label = "Versión de Helm", value = versionName)
+                AboutRow(label = "Firmware MCU", value = mcuVersion)
                 AboutRow(label = "Android", value = android.os.Build.VERSION.RELEASE)
                 AboutRow(label = "Dispositivo", value = android.os.Build.MODEL)
                 AboutRow(label = "API mínima", value = "29 (Android 10)")

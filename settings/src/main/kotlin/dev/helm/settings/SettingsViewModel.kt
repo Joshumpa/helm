@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.AudioManager
 import android.provider.Settings
 import androidx.lifecycle.AndroidViewModel
+import dev.helm.sdk.McuServiceLocator
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +14,9 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
 
     private val audio = application.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val resolver = application.contentResolver
+
+    val mcuVersion: StateFlow<String> =
+        runCatching { McuServiceLocator.service.firmwareVersion }.getOrDefault(MutableStateFlow("—"))
 
     private val _brightness = MutableStateFlow(readBrightness())
     val brightness: StateFlow<Float> = _brightness.asStateFlow()

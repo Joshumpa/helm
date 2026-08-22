@@ -99,6 +99,19 @@ class McuService internal constructor(
     private val _speed = MutableStateFlow(0)
     val speed: StateFlow<Int> = _speed.asStateFlow()
 
+    // Firmware version starts at "—"; updated when MCU sends 0x010A (may be proactive on boot).
+    private val _firmwareVersion = MutableStateFlow("—")
+    val firmwareVersion: StateFlow<String> = _firmwareVersion.asStateFlow()
+
+    init {
+        // Collect MCU firmware version when it arrives (MCU sends 0x010A proactively on boot).
+        // TODO: if MCU doesn't send proactively post-FEL, add explicit request command here.
+        scope.launch {
+            events.filterIsInstance<McuEvent.McuVersionReceived>()
+                .collect { _firmwareVersion.value = it.version }
+        }
+    }
+
     // Task 1.9 — power-off: ack MCU, schedule shutdown. Requires system privileges (Track B).
     init {
         scope.launch {

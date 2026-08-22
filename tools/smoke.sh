@@ -19,7 +19,9 @@ PKG="dev.helm.launcher"
 OUT="$ROOT/build/smoke"
 SERIAL=""
 INSTALL=1
-TIMEOUT=15   # seconds an assertion waits before giving up, à la Playwright
+TIMEOUT=30   # seconds an assertion waits before giving up, à la Playwright.
+             # Each poll costs a full ui_dump (~2 s on a CI emulator), so this is
+             # only a handful of attempts, not 30.
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -91,6 +93,14 @@ sees_now() { ui_dump | grep -qF "text=\"$1\""; }
 
 launch() {
   adb_ shell am start -n "$PKG/.MainActivity" >/dev/null
+  # Wait for the activity to actually be resumed rather than sleeping a fixed
+  # amount: a cold start on a CI emulator takes far longer than on a warm local
+  # one, and a fixed sleep turns that into a flaky failure.
+  local deadline=$(( SECONDS + 60 ))
+  while [ $SECONDS -lt $deadline ]; do
+    adb_ shell dumpsys activity activities 2>/dev/null | grep -q "mResumedActivity.*$PKG" && break
+    sleep 1
+  done
   sleep 3   # splash auto-dismisses at 1.6 s
 }
 

@@ -151,6 +151,14 @@ CarPlay.state(): Flow<CarPlayState>      // ZLINK adapter via MCU
 
 ---
 
+## Testing Patterns
+
+- **Extract pure logic from ViewModels** — if a private method in a ViewModel has non-trivial business logic (version comparison, parsers, mappers), move it to an `internal` top-level function so it can be unit-tested without instantiating the ViewModel.
+- **Long→Int narrowing in retry loops** — clamp as `Long` *before* narrowing to `Int`. `Long.MAX_VALUE.toInt()` is `-1`; using that as a shift count produces a negative delay and busy-loops the caller (e.g. UART reconnect). Pattern: `attempt.coerceIn(0L, maxShift).toInt()`.
+- **Target ≥ 80% unit-test coverage for pure business logic** — Compose UI and ViewModel wiring don't need to be covered; pure functions with multiple edge cases do.
+
+---
+
 ## Reference Docs
 
 Read before touching `:sdk` or any OEM integration:

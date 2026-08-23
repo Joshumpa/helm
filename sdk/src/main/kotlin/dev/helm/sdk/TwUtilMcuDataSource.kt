@@ -12,10 +12,17 @@ internal class TwUtilMcuDataSource : McuDataSource {
 
     override fun events(): Flow<McuEvent> = adapter.events()
         .retryWhen { _, attempt ->
-            delay(minOf(500L shl attempt.toInt().coerceAtMost(6), 30_000L))
+            delay(reconnectDelayMs(attempt))
             true
         }
 
     override suspend fun send(code: Int, arg1: Int, arg2: Int, data: ByteArray): Result<Unit> =
         adapter.send(code, arg1, arg2, data)
 }
+
+// Exponential back-off for MCU reconnection: 500 ms, 1 s, 2 s, 4 s, 8 s, 16 s, then 30 s
+// forever. Clamp the attempt as a Long *before* narrowing to Int: Long.MAX_VALUE.toInt()
+// is -1, and `shl` only reads the low 6 bits of the count, so narrowing first turns a very
+// long outage into a negative delay and busy-loops the UART.
+internal fun reconnectDelayMs(attempt: Long): Long =
+    minOf(500L shl attempt.coerceIn(0L, 6L).toInt(), 30_000L)

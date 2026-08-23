@@ -85,22 +85,4 @@ class OtaViewModel(application: Application) : AndroidViewModel(application) {
     fun reset() {
         _state.value = OtaState.Idle
     }
-
-    private fun isNewer(server: String, installed: String): Boolean {
-        fun String.components(): List<Int> {
-            val core = substringBefore('+').substringBefore('-').trimStart('v')
-            val parts = core.split('.').mapNotNull { it.toIntOrNull() }
-            return parts.ifEmpty { listOf(0) }
-        }
-        val s = server.components()
-        val c = installed.components()
-        val len = maxOf(s.size, c.size)
-        for (i in 0 until len) {
-            val sv = s.getOrElse(i) { 0 }
-            val cv = c.getOrElse(i) { 0 }
-            if (sv > cv) return true
-            if (sv < cv) return false
-        }
-        return false
-    }
 }

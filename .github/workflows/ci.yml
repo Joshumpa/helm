@@ -44,3 +44,46 @@ jobs:
           name: helm-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           retention-days: 14
+
+  smoke:
+    name: UI smoke test
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download debug APK
+        uses: actions/download-artifact@v4
+        with:
+          name: helm-debug
+          path: app/build/outputs/apk/debug
+
+      # The emulator needs KVM, and the runner does not grant it by default.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # API 29 + 768x1024 portrait mirrors the real head unit, so the smoke run
+      # exercises the same layout the car does.
+      - name: Run smoke test
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 29
+          target: google_apis
+          arch: x86_64
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+            -camera-back emulated -skin 768x1024
+          script: bash tools/smoke.sh
+
+      - name: Upload smoke screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-screenshots
+          path: build/smoke/
+          retention-days: 14

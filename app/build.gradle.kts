@@ -28,6 +28,14 @@ android {
         }
     }
 
+    applicationVariants.all {
+        val variant = this
+        outputs.all {
+            (this as com.android.build.gradle.internal.api.BaseVariantOutputImpl).outputFileName =
+                "helm-${variant.versionName}-${variant.buildType.name}.apk"
+        }
+    }
+
     buildTypes {
         debug {
             // No abiFilter — all ABIs supported so the emulator (x86_64) works
